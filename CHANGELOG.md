@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - **Zones.** A zone is a named group. New commands: *New zone* (name and colour) and *Move selected nodes to zone* (Cmd/Ctrl+Shift+M, also *Move to zone…* in the node's menu). The selected nodes go to the zone with their branches, keeping the map's shape; typing a name that doesn't exist creates the zone.
 - **Responsive zones** (setting, off by default): every group wraps its nodes and their branches, growing and shrinking with them; overlapping nodes and groups are pushed apart, to the right or down. It is off by default because it reshapes the groups of every canvas you edit.
