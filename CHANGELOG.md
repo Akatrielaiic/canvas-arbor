@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+
+- **Cmd/Ctrl+Shift+M is now a canvas key**, like Cmd/Ctrl+F and Shift+arrow, instead of a default global hotkey (which Obsidian asks plugins not to set). It works on every canvas as before and no longer exists outside one. Setting: *Cmd/Ctrl+Shift+M moves to a zone* (on by default).
+
 ## 0.5.1
 
 - The settings are grouped: Keys, Layout, Nodes, Arrows, Zones, Files.

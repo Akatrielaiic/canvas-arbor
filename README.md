@@ -150,6 +150,8 @@ choosing characters.
 - **New nodes take the branch's colour**.
 - **Fit nodes to their text** and **maximum node width**.
 - **Rename attachments pasted into a canvas**.
+- **Cmd/Ctrl+Shift+M moves to a zone** — the key for *Move to zone…*. It lives
+  on the canvas, like Cmd/Ctrl+F: outside a canvas the key is free.
 - **Responsive zones** — groups wrap their contents and overlaps are pushed
   apart. Off by default, because it reshapes the groups of every canvas you
   edit: turn it on if you use groups as zones.

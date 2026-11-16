@@ -165,10 +165,9 @@ export default class CanvasArbor extends Plugin {
 			id: "move-to-zone",
 			name: s.moveToZone,
 			icon: "folder-input",
-			// M for "move". Canvas Pensum binds the same key on its own canvas, where this command is off.
-			hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }],
-			// Obsidian runs only the first command bound to a key, even when it does not apply. On the
-			// Pensatorium the key belongs to Canvas Pensum, so when pressed there we hand over to it.
+			// No default hotkey: the key is registered on each canvas view's scope (see claimKeys). If
+			// the user binds one hotkey to this command and to Canvas Pensum's, Obsidian runs only the
+			// first of the two, even where it does not apply: so each hands over to the other.
 			checkCallback: (checking) => this.zoneCommand(checking) || (!checking && !!this.pensum()?.zoneCommand?.(false)),
 		});
 		// Canvas context menus (events Obsidian fires but does not document).
@@ -276,6 +275,10 @@ export default class CanvasArbor extends Plugin {
 	async saveSettings() {
 		this.sizeCache.clear(); // the maximum width may have changed
 		await this.saveData(this.settings);
+		// The canvas keys follow the settings: give them back and claim them again.
+		for (const [view, handlers] of this.findKeys) for (const handler of handlers) view.scope?.unregister(handler);
+		this.findKeys.clear();
+		this.addTidyButtons();
 	}
 
 	// ---------- Entry points ----------
@@ -315,14 +318,14 @@ export default class CanvasArbor extends Plugin {
 			{ label: s.helpReorder, keys: [["Alt", "↑ ↓"]] },
 			{ label: s.helpParent, keys: [["Shift", "Tab"]] },
 			{ label: s.helpSearch, keys: [["Mod", "F"]] },
-			{ label: s.helpZone, keys: commandKeys(this.app, `${this.manifest.id}:move-to-zone`) },
+			{ label: s.helpZone, keys: [...(this.settings.zoneKey ? [["Mod", "Shift", "M"]] : []), ...commandKeys(this.app, `${this.manifest.id}:move-to-zone`)] },
 		];
 	}
 
 	// ---------- Zones ----------
 
-	private pensum(): { ownsCanvas?(path: string): boolean; zoneCommand?(checking: boolean): boolean } | undefined {
-		type Other = { ownsCanvas?(path: string): boolean; zoneCommand?(checking: boolean): boolean };
+	private pensum(): { ownsCanvas?(path: string): boolean; zoneCommand?(checking: boolean): boolean; zoneKey?(): boolean } | undefined {
+		type Other = { ownsCanvas?(path: string): boolean; zoneCommand?(checking: boolean): boolean; zoneKey?(): boolean };
 		return (this.app as unknown as { plugins?: { plugins?: Record<string, Other | undefined> } }).plugins?.plugins?.["canvas-pensum"];
 	}
 
@@ -330,6 +333,11 @@ export default class CanvasArbor extends Plugin {
 	private pensumOwns(canvas: Canvas): boolean {
 		const path = this.viewOf(canvas)?.file?.path;
 		return !!path && !!this.pensum()?.ownsCanvas?.(path);
+	}
+
+	/** The canvas key for "Move to zone", when it is on and applies here. Public for Canvas Pensum, as below. */
+	zoneKey(): boolean {
+		return this.settings.zoneKey && this.zoneCommand(false);
 	}
 
 	/** "Move selected nodes to zone" on our canvases. Public so Canvas Pensum can hand the key over. */
@@ -1668,6 +1676,11 @@ export default class CanvasArbor extends Plugin {
 				return false;
 			}),
 		];
+		// Move to zone. A scope runs only the first handler registered for a key, and Canvas Pensum
+		// registers this one too (for its own canvas): whichever gets it hands over to the other.
+		if (this.settings.zoneKey) {
+			handlers.push(scope.register(["Mod", "Shift"], "m", () => (this.zoneKey() || this.pensum()?.zoneKey?.() ? false : undefined)));
+		}
 		const keys = (scope as unknown as { keys?: ScopeKey[] }).keys;
 		if (!Array.isArray(keys)) return handlers;
 		for (const key of ARROWS) {

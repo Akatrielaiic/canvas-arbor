@@ -26,6 +26,8 @@ export interface Settings {
 	maxWidth: number;
 	/** Groups wrap their contents and overlaps are pushed apart. */
 	zones: boolean;
+	/** Cmd/Ctrl+Shift+M on a canvas moves the selected nodes to a zone. */
+	zoneKey: boolean;
 	/** Collapsed branches, by canvas path, then by the collapsed node's id. Not shown in the settings tab. */
 	folds: Record<string, Record<string, Fold>>;
 }
@@ -48,10 +50,11 @@ export const DEFAULT_SETTINGS: Settings = {
 	autoSize: true,
 	maxWidth: 320,
 	zones: false,
+	zoneKey: true,
 	folds: {},
 };
 
-type ToggleKey = "autoLayout" | "enterInEdit" | "tabAddsChild" | "mobileKeys" | "arrowKeys" | "arrowEdges" | "linkArrows" | "routeLinks" | "compact" | "inheritColor" | "autoSize" | "renamePasted" | "zones";
+type ToggleKey = "autoLayout" | "enterInEdit" | "tabAddsChild" | "mobileKeys" | "arrowKeys" | "arrowEdges" | "linkArrows" | "routeLinks" | "compact" | "inheritColor" | "autoSize" | "renamePasted" | "zones" | "zoneKey";
 type SliderKey = "hGap" | "vGap" | "maxWidth" | "balanceFrom";
 type SettingSpec =
 	| { kind: "toggle"; key: ToggleKey; name: string; desc: string }
@@ -98,7 +101,13 @@ function settingSections(): SettingSection[] {
 				{ kind: "toggle", key: "routeLinks", name: s.routeLinks, desc: s.routeLinksDesc },
 			],
 		},
-		{ heading: s.secZones, specs: [{ kind: "toggle", key: "zones", name: s.zones, desc: s.zonesDesc }] },
+		{
+			heading: s.secZones,
+			specs: [
+				{ kind: "toggle", key: "zoneKey", name: s.zoneKey, desc: s.zoneKeyDesc },
+				{ kind: "toggle", key: "zones", name: s.zones, desc: s.zonesDesc },
+			],
+		},
 		{ heading: s.secFiles, specs: [{ kind: "toggle", key: "renamePasted", name: s.renamePasted, desc: s.renamePastedDesc }] },
 	];
 }

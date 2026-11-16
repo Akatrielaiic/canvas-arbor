@@ -100,6 +100,8 @@ const STRINGS = {
 		secFiles: "Files",
 		howTitle: "How it works",
 		howDesc: "Type in a node and press Enter or Tab: the next node appears, connected and ready for text. Shift+arrow moves between nodes, Shift+Enter edits the selected one. The Tidy button among the canvas controls lays every map out again. All the keys are listed in the canvas help (the ? among the canvas controls).",
+		zoneKey: "Cmd/Ctrl+Shift+M moves to a zone",
+		zoneKeyDesc: "With nodes selected on a canvas, Cmd/Ctrl+Shift+M sends them to a zone you pick or name. The key only exists while a canvas is in front, so it can't clash with keys you use elsewhere. Off: use the command or the node's menu, or bind a key of your own in the hotkey settings.",
 		zones: "Responsive zones",
 		zonesDesc: "A zone is a group. With this on, every group on a canvas wraps its nodes and the branches below them, growing and shrinking with them, and nodes or groups that overlap are pushed apart, to the right or down. Off: groups are left exactly as you draw them. On the Pensatorium, Canvas Pensum looks after the zones.",
 	},
