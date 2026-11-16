@@ -166,13 +166,9 @@ export default class CanvasArbor extends Plugin {
 			icon: "folder-input",
 			// M for "move". Canvas Pensum binds the same key on its own canvas, where this command is off.
 			hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }],
-			checkCallback: (checking) => {
-				const canvas = this.zoneCanvas();
-				const ids = canvas ? this.selectedIds(canvas) : [];
-				if (!canvas || !ids.length) return false;
-				if (!checking) this.moveToZone(canvas, ids);
-				return true;
-			},
+			// Obsidian runs only the first command bound to a key, even when it does not apply. On the
+			// Pensatorium the key belongs to Canvas Pensum, so when pressed there we hand over to it.
+			checkCallback: (checking) => this.zoneCommand(checking) || (!checking && !!this.pensum()?.zoneCommand?.(false)),
 		});
 		// Canvas context menus (events Obsidian fires but does not document).
 		const menus = this.app.workspace as unknown as {
@@ -301,11 +297,24 @@ export default class CanvasArbor extends Plugin {
 
 	// ---------- Zones ----------
 
+	private pensum(): { ownsCanvas?(path: string): boolean; zoneCommand?(checking: boolean): boolean } | undefined {
+		type Other = { ownsCanvas?(path: string): boolean; zoneCommand?(checking: boolean): boolean };
+		return (this.app as unknown as { plugins?: { plugins?: Record<string, Other | undefined> } }).plugins?.plugins?.["canvas-pensum"];
+	}
+
 	/** Canvas Pensum looks after the zones of its own canvas (the Pensatorium); we leave that one alone. */
 	private pensumOwns(canvas: Canvas): boolean {
 		const path = this.viewOf(canvas)?.file?.path;
-		const plugins = (this.app as unknown as { plugins?: { plugins?: Record<string, { ownsCanvas?(path: string): boolean } | undefined> } }).plugins?.plugins;
-		return !!path && !!plugins?.["canvas-pensum"]?.ownsCanvas?.(path);
+		return !!path && !!this.pensum()?.ownsCanvas?.(path);
+	}
+
+	/** "Move selected nodes to zone" on our canvases. Public so Canvas Pensum can hand the key over. */
+	zoneCommand(checking: boolean): boolean {
+		const canvas = this.zoneCanvas();
+		const ids = canvas ? this.selectedIds(canvas) : [];
+		if (!canvas || !ids.length) return false;
+		if (!checking) this.moveToZone(canvas, ids);
+		return true;
 	}
 
 	/** The active canvas, when zone commands apply to it. */

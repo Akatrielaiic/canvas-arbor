@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+- Fixed: with Canvas Pensum also enabled, Cmd/Ctrl+Shift+M worked in only one of the two plugins. Each now hands the key over to the other on the canvas it does not look after.
+
 ## 0.4.0
 
 - **Zones.** A zone is a named group. New commands: *New zone* (name and colour) and *Move selected nodes to zone* (Cmd/Ctrl+Shift+M, also *Move to zone…* in the node's menu). The selected nodes go to the zone with their branches, keeping the map's shape; typing a name that doesn't exist creates the zone.
