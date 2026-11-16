@@ -156,6 +156,11 @@ this repository), which also keeps it up to date, or copy `main.js`,
 It has its own plugin id, so it can sit next to Canvas Quick Mindmap; enable
 only one of the two.
 
+## Support
+
+If Canvas Arbor is useful to you, you can
+[buy me a coffee](https://www.paypal.com/paypalme/nicotio). Thank you!
+
 ## Development
 
 `npm ci`, then `npm run dev` (watch), `npm run build`, `npm test`, `npm run lint`.
