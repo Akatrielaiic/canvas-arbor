@@ -18,6 +18,8 @@ idea appears to the right, already connected and ready for text. Press **Tab** a
 it appears below, on the same level. The canvas stays a normal `.canvas` file —
 nothing new to learn, nothing locked in.
 
+<!-- GIF (uncomment when recorded): ![Typing a map: Enter and Tab add connected nodes](docs/media/type-your-map.gif) -->
+
 ## Features
 
 - **Type your map.** While editing a node, **Enter** adds a child node and **Tab**
@@ -85,6 +87,11 @@ nothing new to learn, nothing locked in.
 - **Keys in the canvas help.** The canvas help (the **?** among the canvas
   controls) lists Canvas Arbor's keys below Canvas's own, with the ones you
   have changed.
+
+<!-- GIF (uncomment when recorded): ![Shift+arrow moves between nodes, Alt+arrow reorders siblings](docs/media/move-and-reorder.gif) -->
+<!-- GIF (uncomment when recorded): ![One click on Tidy lays a messy canvas out](docs/media/tidy.gif) -->
+<!-- GIF (uncomment when recorded): ![Collapsing a branch hides it and the map closes the gap](docs/media/collapse.gif) -->
+<!-- GIF (uncomment when recorded): ![A pasted Markdown list becomes a map](docs/media/list-to-map.gif) -->
 
 ## Keys
 
