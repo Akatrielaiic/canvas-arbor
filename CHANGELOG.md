@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- **Keys in the canvas help.** The canvas help (the ? among the canvas controls) now lists Canvas Arbor's keys below Canvas's own, following your settings and any hotkey you changed.
+- The settings start with a short "How it works".
+- The Chinese interface is gone: it came with the plugin this one was forked from and could no longer be kept up to date. Everything is in English.
+
 ## 0.4.1
 
 - Fixed: with Canvas Pensum also enabled, Cmd/Ctrl+Shift+M worked in only one of the two plugins. Each now hands the key over to the other on the canvas it does not look after.

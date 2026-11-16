@@ -82,7 +82,9 @@ nothing new to learn, nothing locked in.
   the branches below them, growing and shrinking as the map changes; nodes and
   groups that would overlap are pushed apart, to the right or down, and the
   selected node stays where it is.
-- English and Chinese interface, following Obsidian's language.
+- **Keys in the canvas help.** The canvas help (the **?** among the canvas
+  controls) lists Canvas Arbor's keys below Canvas's own, with the ones you
+  have changed.
 
 ## Keys
 
@@ -181,15 +183,6 @@ If Canvas Arbor is useful to you, you can
 `npm ci`, then `npm run dev` (watch), `npm run build`, `npm test`, `npm run lint`.
 The layout (`src/layout.ts`), tree reading (`src/tree.ts`), link renaming
 (`src/text.ts`) and Markdown lists (`src/outline.ts`) have unit tests in `tests/`.
-
-## 中文说明
-
-把 Obsidian 画布当思维导图用：输入时 **Enter** 新建子节点、**Tab** 新建同级节点，
-自动连线、自动排版；选中节点按 **Shift+Enter** 编辑；节点旁边的 **+** 按钮手机上也能用；
-右侧工具栏一键「整理导图」；节点大小跟随文字；**⌘F** 搜索画布；图片节点一键复制；
-粘贴进画布的图片按画布名重命名。选中节点后**Shift+方向键**在节点间移动，**Alt+方向键**调整同级顺序；
-Shift+方向键会在连线上停一下，此时按 **Shift+Enter** 写连线标签，**Esc** 退出，导图会自动给标签留出位置；
-分支可以折叠 / 展开；新节点沿用分支颜色；导图可以复制为 Markdown 列表，列表也可以粘贴成导图。
 
 ## Credits and license
 

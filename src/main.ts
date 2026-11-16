@@ -4,6 +4,7 @@ import { EditorView } from "@codemirror/view";
 import { around } from "monkey-around";
 import type { BBox, Canvas, CanvasEdge, CanvasMenu, CanvasNode, CanvasView } from "./canvas";
 import { Side, SIDES, bboxOf, center, edgeCurve, inBox, labelSpace, linkReach, moveBy, overlaps, unionBox } from "./geometry";
+import { HelpRow, commandKeys, watchCanvasHelp } from "./help";
 import { t } from "./i18n";
 import { NodeSize, Offset, positions, shapeOf, span } from "./layout";
 import { OutlineItem, formatOutline, parseOutline } from "./outline";
@@ -192,6 +193,7 @@ export default class CanvasArbor extends Plugin {
 
 		// A node selected but not being edited.
 		const listen = (win: Window) => {
+			this.register(watchCanvasHelp(win.document, "arbor-help", s.helpTitle, () => this.helpRows()));
 			this.registerDomEvent(win, "keydown", (evt) => this.onWindowKeydown(evt), { capture: true });
 			// Writing on an arrow, or leaving its label (an empty one is removed): the map makes room for it.
 			this.registerDomEvent(win, "input", (evt) => this.onLabelChanged(evt), { capture: true });
@@ -293,6 +295,28 @@ export default class CanvasArbor extends Plugin {
 
 	private activeCanvas(): Canvas | null {
 		return this.activeCanvasView()?.canvas ?? null;
+	}
+
+	// ---------- Help ----------
+
+	/** Our keys, for the canvas help: as the settings have them, with any hotkey the user changed. */
+	private helpRows(): HelpRow[] {
+		const s = t();
+		const { enterInEdit, tabAddsChild, arrowKeys } = this.settings;
+		const enter = enterInEdit && (!Platform.isMobile || this.settings.mobileKeys) ? [["Enter"]] : [];
+		const tab = [["Tab"]];
+		return [
+			{ label: s.helpChild, keys: tabAddsChild ? tab : enter },
+			{ label: s.helpSibling, keys: tabAddsChild ? enter : tab },
+			{ label: s.helpBreak, keys: [["Shift", "Enter"]] },
+			{ label: s.helpTabChild, keys: tab },
+			{ label: s.helpEdit, keys: [["Shift", "Enter"]] },
+			{ label: s.helpMove, keys: arrowKeys ? [["Shift", "↑ ↓ ← →"]] : [] },
+			{ label: s.helpReorder, keys: [["Alt", "↑ ↓"]] },
+			{ label: s.helpParent, keys: [["Shift", "Tab"]] },
+			{ label: s.helpSearch, keys: [["Mod", "F"]] },
+			{ label: s.helpZone, keys: commandKeys(this.app, `${this.manifest.id}:move-to-zone`) },
+		];
 	}
 
 	// ---------- Zones ----------

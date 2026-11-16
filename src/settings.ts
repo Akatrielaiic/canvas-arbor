@@ -92,6 +92,11 @@ export class SettingTab extends PluginSettingTab {
 
 	/** 1.13+: declarative settings, searchable from the settings window. Values go through plugin.settings. */
 	getSettingDefinitions(): SettingDefinitionItem[] {
+		const intro: SettingDefinitionItem = { name: t().howTitle, desc: t().howDesc };
+		return [intro, ...this.controlDefinitions()];
+	}
+
+	private controlDefinitions(): SettingDefinitionItem[] {
 		return settingSpecs().map((spec) =>
 			spec.kind === "toggle"
 				? { name: spec.name, desc: spec.desc, control: { type: "toggle", key: spec.key, defaultValue: DEFAULT_SETTINGS[spec.key] } }
@@ -107,6 +112,7 @@ export class SettingTab extends PluginSettingTab {
 	display() {
 		const { containerEl } = this;
 		containerEl.empty();
+		new Setting(containerEl).setName(t().howTitle).setDesc(t().howDesc);
 		for (const spec of settingSpecs()) {
 			const row = new Setting(containerEl).setName(spec.name).setDesc(spec.desc);
 			if (spec.kind === "toggle") {
