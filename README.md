@@ -73,6 +73,15 @@ nothing new to learn, nothing locked in.
 - **Pasted images get real names.** Images pasted or dropped into a canvas are
   renamed after the canvas (`Plan.png`, `Plan-1.png`…), the way Paste Image
   Rename does it for notes — including links inside text cards.
+- **Zones.** A zone is a named group. *New zone* adds an empty one, with a name
+  and a colour. *Move to zone…* in a node's menu (or the command, **Cmd/Ctrl+Shift+M**)
+  sends the selected nodes there, with their branches, keeping the map's shape;
+  type a name that doesn't exist and press Enter to create that zone on the spot.
+  Tidy keeps every tree and loose node inside its zone.
+- **Responsive zones** (setting, off by default). Every group wraps its nodes and
+  the branches below them, growing and shrinking as the map changes; nodes and
+  groups that would overlap are pushed apart, to the right or down, and the
+  selected node stays where it is.
 - English and Chinese interface, following Obsidian's language.
 
 ## Keys
@@ -132,6 +141,9 @@ choosing characters.
 - **New nodes take the branch's colour**.
 - **Fit nodes to their text** and **maximum node width**.
 - **Rename attachments pasted into a canvas**.
+- **Responsive zones** — groups wrap their contents and overlaps are pushed
+  apart. Off by default, because it reshapes the groups of every canvas you
+  edit: turn it on if you use groups as zones.
 
 ## Notes
 
@@ -139,6 +151,9 @@ choosing characters.
   is not officially documented, and is tested on Obsidian 1.15.
 - Only nodes that are part of a mind map (have an edge) resize while you type,
   so ordinary cards on a canvas are left alone.
+- Zones work the same way in [Canvas Pensum](https://github.com/Akatrielaiic/canvas-pensum),
+  a task desk on Canvas. With both plugins on, Pensum looks after its own
+  canvas (the Pensatorium) and Canvas Arbor after every other one.
 - Collapsed branches are remembered in the plugin's data, per canvas file. If
   that data is lost (or the plugin is off) the branches are simply all open.
 - Renaming only touches files that the open canvas actually uses within a few

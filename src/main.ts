@@ -1,4 +1,4 @@
-import { ItemView, KeymapContext, KeymapEventHandler, Notice, Platform, Plugin, TAbstractFile, TFile, debounce, normalizePath, setIcon, setTooltip } from "obsidian";
+import { EventRef, ItemView, KeymapContext, KeymapEventHandler, Menu, Notice, Platform, Plugin, TAbstractFile, TFile, debounce, normalizePath, setIcon, setTooltip } from "obsidian";
 import { Prec } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { around } from "monkey-around";
@@ -10,6 +10,7 @@ import { OutlineItem, formatOutline, parseOutline } from "./outline";
 import { CanvasSearch, isFindKey, isShiftTab, usesCmd } from "./search";
 import { DEFAULT_SETTINGS, Fold, SettingTab, Settings } from "./settings";
 import { IMAGE_EXTENSIONS, applyReplacements, mentions, plainText, randomId, replacements } from "./text";
+import * as zones from "./zones";
 import {
 	ArrowKey,
 	Dir,
@@ -148,6 +149,43 @@ export default class CanvasArbor extends Plugin {
 			},
 		});
 
+		this.addCommand({
+			id: "new-zone",
+			name: s.newZone,
+			icon: "square-dashed",
+			checkCallback: (checking) => {
+				const canvas = this.zoneCanvas();
+				if (!canvas) return false;
+				if (!checking) void this.newZone(canvas);
+				return true;
+			},
+		});
+		this.addCommand({
+			id: "move-to-zone",
+			name: s.moveToZone,
+			icon: "folder-input",
+			// M for "move". Canvas Pensum binds the same key on its own canvas, where this command is off.
+			hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }],
+			checkCallback: (checking) => {
+				const canvas = this.zoneCanvas();
+				const ids = canvas ? this.selectedIds(canvas) : [];
+				if (!canvas || !ids.length) return false;
+				if (!checking) this.moveToZone(canvas, ids);
+				return true;
+			},
+		});
+		// Canvas context menus (events Obsidian fires but does not document).
+		const menus = this.app.workspace as unknown as {
+			on(name: "canvas:node-menu", cb: (menu: Menu, node: CanvasNode) => void): EventRef;
+			on(name: "canvas:selection-menu", cb: (menu: Menu, canvas: Canvas) => void): EventRef;
+		};
+		const addZoneItem = (menu: Menu, canvas: Canvas, ids: string[]) => {
+			if (canvas.readonly || !ids.length || this.pensumOwns(canvas)) return;
+			menu.addItem((item) => item.setTitle(s.moveToZoneMenu).setIcon("folder-input").onClick(() => this.moveToZone(canvas, ids)));
+		};
+		this.registerEvent(menus.on("canvas:node-menu", (menu, node) => node?.canvas && !isGroup(node) && addZoneItem(menu, node.canvas, [node.id])));
+		this.registerEvent(menus.on("canvas:selection-menu", (menu, canvas) => canvas?.selection && addZoneItem(menu, canvas, this.selectedIds(canvas))));
+
 		// Typing inside a node: the editor lives in an iframe, so its keys never reach window listeners.
 		this.registerEditorExtension([
 			Prec.highest(EditorView.domEventHandlers({ keydown: (evt, view) => this.onEditorKeydown(evt, view) })),
@@ -177,7 +215,11 @@ export default class CanvasArbor extends Plugin {
 		this.registerEvent(
 			this.app.vault.on("modify", (file) => {
 				if (!(file instanceof TFile) || file.extension !== "canvas") return;
-				for (const view of this.canvasViews()) if (view.file === file && view.canvas) this.refreshFolds(view.canvas);
+				for (const view of this.canvasViews()) {
+					if (view.file !== file || !view.canvas) continue;
+					this.refreshFolds(view.canvas);
+					this.zonesSoon(view.canvas); // a node was dragged or resized by hand
+				}
 			}),
 		);
 		this.registerEvent(
@@ -217,6 +259,8 @@ export default class CanvasArbor extends Plugin {
 
 	onunload() {
 		this.restoreMenu?.();
+		for (const timer of this.zoneTimers.values()) window.clearTimeout(timer);
+		this.zoneTimers.clear();
 		for (const [view, handlers] of this.findKeys) for (const handler of handlers) view.scope?.unregister(handler);
 		for (const search of this.searches.values()) search.close(false);
 		for (const timer of this.fitTimers.values()) window.clearTimeout(timer);
@@ -253,6 +297,70 @@ export default class CanvasArbor extends Plugin {
 
 	private activeCanvas(): Canvas | null {
 		return this.activeCanvasView()?.canvas ?? null;
+	}
+
+	// ---------- Zones ----------
+
+	/** Canvas Pensum looks after the zones of its own canvas (the Pensatorium); we leave that one alone. */
+	private pensumOwns(canvas: Canvas): boolean {
+		const path = this.viewOf(canvas)?.file?.path;
+		const plugins = (this.app as unknown as { plugins?: { plugins?: Record<string, { ownsCanvas?(path: string): boolean } | undefined> } }).plugins?.plugins;
+		return !!path && !!plugins?.["canvas-pensum"]?.ownsCanvas?.(path);
+	}
+
+	/** The active canvas, when zone commands apply to it. */
+	private zoneCanvas(): Canvas | null {
+		const canvas = this.activeCanvas();
+		return canvas && !canvas.readonly && !this.pensumOwns(canvas) ? canvas : null;
+	}
+
+	private selectedIds(canvas: Canvas): string[] {
+		return [...canvas.selection].filter((n) => typeof n.getData === "function" && !!canvas.nodes.get(n.id) && !isGroup(n)).map((n) => n.id);
+	}
+
+	private async newZone(canvas: Canvas) {
+		const zone = await zones.promptZone(this.app);
+		if (zone) zones.createZone(canvas, zone);
+	}
+
+	private moveToZone(canvas: Canvas, ids: string[]) {
+		new zones.ZonePicker(this.app, zones.namedZones(canvas), (zone) => {
+			zones.sendToZone(canvas, ids, zone);
+			this.afterZones(canvas);
+			this.runZones(canvas);
+			canvas.requestSave();
+		}).open();
+	}
+
+	/** Nodes moved by the zone code: hidden branches follow, links are routed again. */
+	private afterZones(canvas: Canvas) {
+		this.syncFolds(canvas);
+		forgetBranches(canvas);
+		if (this.settings.linkArrows && this.settings.routeLinks) this.routeLinks(canvas);
+	}
+
+	private zoneTimers = new Map<Canvas, number>();
+
+	/** Tidy the zones shortly: after a layout, or after the canvas was saved (a drag, a resize). */
+	private zonesSoon(canvas: Canvas) {
+		if (!this.settings.zones) return;
+		window.clearTimeout(this.zoneTimers.get(canvas));
+		this.zoneTimers.set(
+			canvas,
+			window.setTimeout(() => {
+				this.zoneTimers.delete(canvas);
+				if (canvas.isDragging) this.zonesSoon(canvas);
+				else this.runZones(canvas);
+			}, 250),
+		);
+	}
+
+	/** Responsive zones: groups wrap their contents, overlaps are pushed apart. The selection stays put. */
+	private runZones(canvas: Canvas) {
+		if (!this.settings.zones || canvas.readonly || this.pensumOwns(canvas) || !this.viewOf(canvas)) return;
+		if (!zones.tidy(canvas, [...canvas.selection].map((n) => n.id))) return;
+		this.afterZones(canvas);
+		canvas.requestSave();
 	}
 
 	/** The one selected node, whether or not the canvas can be edited. */
@@ -1150,6 +1258,7 @@ export default class CanvasArbor extends Plugin {
 		this.straightenEdges(canvas, tree, dirs);
 		this.syncFolds(canvas);
 		if (opts.route !== false && this.settings.linkArrows && this.settings.routeLinks) this.routeLinks(canvas, new Set(tree.keys()));
+		this.zonesSoon(canvas);
 		return tree;
 	}
 
@@ -1321,7 +1430,11 @@ export default class CanvasArbor extends Plugin {
 		const { vGap } = this.settings;
 		const gap = vGap * 3;
 
+		// Trees and loose nodes only make way for what shares their zone (group), so tidying never
+		// pushes a node out of the zone it is in.
+		const zoneOf = zones.zoneIds(canvas);
 		const trees: CanvasNode[][] = [];
+		const treeZones: (string | undefined)[] = [];
 		for (const root of this.roots(canvas)) {
 			const tree = buildTree(root);
 			if (this.settings.autoSize) for (const n of tree.keys()) this.fit(n);
@@ -1329,35 +1442,41 @@ export default class CanvasArbor extends Plugin {
 			if (this.balances(root, tree)) this.balance(root, tree, false);
 			else this.layout(root, { route: false });
 			trees.push([...tree.keys()]);
+			treeZones.push(zoneOf.get(root.id));
 		}
 
 		// Trees, top to bottom: push each one down until it clears the ones already placed.
 		const placed: BBox[] = [];
-		for (const members of trees) {
+		const placedZones: (string | undefined)[] = [];
+		for (const [i, members] of trees.entries()) {
 			let box = unionBox(members);
 			for (;;) {
-				const hit = placed.find((p) => overlaps(p, box, gap));
+				const hit = placed.find((p, j) => placedZones[j] === treeZones[i] && overlaps(p, box, gap));
 				if (!hit) break;
 				const dy = hit.maxY + gap - box.minY;
 				members.forEach((n) => moveBy(n, 0, dy));
 				box = unionBox(members);
 			}
 			placed.push(box);
+			placedZones.push(treeZones[i]);
 		}
 		this.syncFolds(canvas);
 		if (this.settings.linkArrows && this.settings.routeLinks) this.routeLinks(canvas);
 
 		// Loose nodes (no edges at all) that ended up under a tree go below everything.
 		const inTree = new Set(trees.flat());
-		let bottom = placed.length ? Math.max(...placed.map((b) => b.maxY)) : 0;
+		const bottoms = new Map<string | undefined, number>();
+		placed.forEach((b, j) => bottoms.set(placedZones[j], Math.max(bottoms.get(placedZones[j]) ?? -Infinity, b.maxY)));
 		for (const n of canvas.nodes.values()) {
 			if (inTree.has(n) || isGroup(n) || hooks.hidden(n) || canvas.getEdgesForNode(n).length) continue;
+			const zone = zoneOf.get(n.id);
 			const box = bboxOf(n);
-			const under = placed.filter((p) => overlaps(p, box, 0));
+			const under = placed.filter((p, j) => placedZones[j] === zone && overlaps(p, box, 0));
 			if (!under.length) continue;
-			n.moveAndResize({ x: Math.min(...under.map((p) => p.minX)), y: bottom + gap, width: n.width, height: n.height });
-			bottom = n.y + n.height;
+			n.moveAndResize({ x: Math.min(...under.map((p) => p.minX)), y: (bottoms.get(zone) ?? 0) + gap, width: n.width, height: n.height });
+			bottoms.set(zone, n.y + n.height);
 		}
+		this.zonesSoon(canvas);
 		canvas.requestSave();
 	}
 

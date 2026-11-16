@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Zones.** A zone is a named group. New commands: *New zone* (name and colour) and *Move selected nodes to zone* (Cmd/Ctrl+Shift+M, also *Move to zone…* in the node's menu). The selected nodes go to the zone with their branches, keeping the map's shape; typing a name that doesn't exist creates the zone.
+- **Responsive zones** (setting, off by default): every group wraps its nodes and their branches, growing and shrinking with them; overlapping nodes and groups are pushed apart, to the right or down. It is off by default because it reshapes the groups of every canvas you edit.
+- **Tidy respects zones.** Trees and loose nodes only make way for what shares their group, so tidying no longer moves a node out of the group it is in.
+- With [Canvas Pensum](https://github.com/Akatrielaiic/canvas-pensum) enabled, its own canvas is left to it.
+
 ## 0.3.2
 
 - **Arrows make room for their labels.** While you write on a branch arrow, the map moves the children away from their parent until the label fits between them (all the siblings together, so they stay aligned), and closes the gap again when the label is removed. Needs *Auto layout*; Tidy does the same.

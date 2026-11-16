@@ -24,6 +24,8 @@ export interface Settings {
 	renamePasted: boolean;
 	autoSize: boolean;
 	maxWidth: number;
+	/** Groups wrap their contents and overlaps are pushed apart. */
+	zones: boolean;
 	/** Collapsed branches, by canvas path, then by the collapsed node's id. Not shown in the settings tab. */
 	folds: Record<string, Record<string, Fold>>;
 }
@@ -45,10 +47,11 @@ export const DEFAULT_SETTINGS: Settings = {
 	renamePasted: true,
 	autoSize: true,
 	maxWidth: 320,
+	zones: false,
 	folds: {},
 };
 
-type ToggleKey = "autoLayout" | "enterInEdit" | "tabAddsChild" | "mobileKeys" | "arrowKeys" | "arrowEdges" | "linkArrows" | "routeLinks" | "compact" | "inheritColor" | "autoSize" | "renamePasted";
+type ToggleKey = "autoLayout" | "enterInEdit" | "tabAddsChild" | "mobileKeys" | "arrowKeys" | "arrowEdges" | "linkArrows" | "routeLinks" | "compact" | "inheritColor" | "autoSize" | "renamePasted" | "zones";
 type SliderKey = "hGap" | "vGap" | "maxWidth" | "balanceFrom";
 type SettingSpec =
 	| { kind: "toggle"; key: ToggleKey; name: string; desc: string }
@@ -73,6 +76,7 @@ function settingSpecs(): SettingSpec[] {
 		{ kind: "toggle", key: "autoSize", name: s.autoSize, desc: s.autoSizeDesc },
 		{ kind: "slider", key: "maxWidth", name: s.maxWidth, desc: s.maxWidthDesc, min: 160, max: 800, step: 20 },
 		{ kind: "toggle", key: "renamePasted", name: s.renamePasted, desc: s.renamePastedDesc },
+		{ kind: "toggle", key: "zones", name: s.zones, desc: s.zonesDesc },
 	];
 }
 
