@@ -5,14 +5,14 @@ Shift+arrow moves between nodes and the arrows that join them, Shift+Enter
 writes on either. Branches collapse, and the map lays itself out in one of
 three structures (right, both sides, downward), balanced, compact and with room
 for the arrows' labels. Hand-drawn arrows are kept as links and routed around
-cards, and maps go to and from Markdown lists.
+nodes, and maps go to and from Markdown lists.
 
 Based on
 [Canvas Quick Mindmap](https://github.com/RainaJIA716/obsidian-canvas-quick-mindmap)
 by RainaJIA716.
 
 Obsidian Canvas is a great place to think, but building a mind map in it is slow:
-create a card, drag it into place, drag an edge from one card to the other, resize,
+create a node, drag it into place, drag an edge from one node to the other, resize,
 repeat. Canvas Arbor turns that into typing. Press **Enter** and the next
 idea appears to the right, already connected and ready for text. Press **Tab** and
 it appears below, on the same level. The canvas stays a normal `.canvas` file —
@@ -30,7 +30,7 @@ nothing new to learn, nothing locked in.
 - **Move around with Shift+arrow.** With a node selected, **Shift+arrow** goes
   to its parent, its nearest child, or the previous / next node on the same
   level. **Alt+arrow** moves the node before or after its sibling. Plain arrows
-  still nudge the card, as Canvas does.
+  still nudge the node, as Canvas does.
 - **Write on arrows from the keyboard.** On the way to a parent or child,
   Shift+arrow stops on the arrow that joins the two nodes. **Shift+Enter** opens its
   label, **Esc** leaves it with the arrow still selected. The map makes room
@@ -54,12 +54,12 @@ nothing new to learn, nothing locked in.
   downward* (selected map, or every map when nothing is selected).
 - **Tidy button.** One click in the canvas toolbar re-lays out every tree on the
   canvas, points branch arrows the way their branch grows, pulls overlapping
-  trees apart and moves loose cards out of the way. One undo restores everything.
+  trees apart and moves loose nodes out of the way. One undo restores everything.
 - **Nodes fit their text.** Mind map nodes grow and shrink as you type; long text
-  wraps at a maximum width instead of making a huge card. Notes, images, code
+  wraps at a maximum width instead of making a huge node. Notes, images, code
   blocks, tables and headings keep their size.
 - **Search the canvas.** **Cmd/Ctrl+F** (or the magnifier in the toolbar) opens a
-  find bar. It searches card text, group labels, links, file names and the
+  find bar. It searches node text, group labels, links, file names and the
   content of embedded notes. Matches are highlighted, the rest dimmed;
   **Enter / Shift+Enter** jump between them, **Esc** closes and leaves the
   result selected so Shift+Enter edits it.
@@ -74,7 +74,7 @@ nothing new to learn, nothing locked in.
   converted to PNG).
 - **Pasted images get real names.** Images pasted or dropped into a canvas are
   renamed after the canvas (`Plan.png`, `Plan-1.png`…), the way Paste Image
-  Rename does it for notes — including links inside text cards.
+  Rename does it for notes — including links inside text nodes.
 - **Zones.** A zone is a named group. *New zone* adds an empty one, with a name
   and a colour. *Move to zone…* in a node's menu (or the command, **Cmd/Ctrl+Shift+M**)
   sends the selected nodes there, with their branches, keeping the map's shape;
@@ -120,7 +120,7 @@ choosing characters.
 
 - Brainstorm on a canvas without touching the mouse: type, Enter, type, Tab.
 - Turn a messy canvas into a clean tree with one click.
-- Find the card you wrote last week on a big canvas.
+- Find the node you wrote last week on a big canvas.
 - Paste screenshots into a canvas and get sensible file names.
 
 ## Settings
@@ -159,7 +159,7 @@ choosing characters.
 - Works on the canvas Obsidian already has; it uses Canvas's internal API, which
   is not officially documented, and is tested on Obsidian 1.15.
 - Only nodes that are part of a mind map (have an edge) resize while you type,
-  so ordinary cards on a canvas are left alone.
+  so ordinary nodes on a canvas are left alone.
 - Zones work the same way in [Canvas Pensum](https://github.com/Akatrielaiic/canvas-pensum),
   a task desk on Canvas. With both plugins on, Pensum looks after its own
   canvas (the Pensatorium) and Canvas Arbor after every other one.
@@ -188,6 +188,9 @@ If Canvas Arbor is useful to you, you can
 ## Development
 
 `npm ci`, then `npm run dev` (watch), `npm run build`, `npm test`, `npm run lint`.
+`npm run check:shared` checks that the files shared verbatim with
+[Canvas Pensum](https://github.com/Akatrielaiic/canvas-pensum)
+(`src/zone-engine.ts`, `src/help.ts`) still match its copies.
 The layout (`src/layout.ts`), tree reading (`src/tree.ts`), link renaming
 (`src/text.ts`) and Markdown lists (`src/outline.ts`) have unit tests in `tests/`.
 

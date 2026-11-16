@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+
+- The settings are grouped: Keys, Layout, Nodes, Arrows, Zones, Files.
+- One word throughout: "node" (the interface and the README sometimes said "card").
+
 ## 0.5.0
 
 - **Keys in the canvas help.** The canvas help (the ? among the canvas controls) now lists Canvas Arbor's keys below Canvas's own, following your settings and any hotkey you changed.
