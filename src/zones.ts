@@ -8,7 +8,9 @@ import {
 	type CanvasData as ZoneData,
 	type CanvasNode as ZoneNode,
 	type Layout,
+	addMapZone,
 	addZone,
+	arrangeZoneMaps,
 	groupsBySize,
 	moveToZone,
 	tidyZones,
@@ -24,7 +26,7 @@ export function zoneLayout(canvas: Canvas): Layout {
 /**
  * The canvas as the engine sees it. Nodes hidden in a collapsed branch are left out (they follow
  * their branch on their own), and the only arrows are branches, parent to child: links between
- * maps don't make one map the child of another.
+ * maps don't make one map the child of another. Arrows between zones are kept: they make zone maps.
  */
 export function snapshot(canvas: Canvas): ZoneData {
 	const nodes: ZoneNode[] = [];
@@ -38,6 +40,11 @@ export function snapshot(canvas: Canvas): ZoneData {
 		nodes.push(node);
 		const parent = isGroup(n) ? null : parentOf(n);
 		if (parent && !hooks.hidden(parent)) edges.push({ id: `${parent.id}>${n.id}`, fromNode: parent.id, toNode: n.id });
+	}
+	for (const e of canvas.edges.values()) {
+		const from = e.from?.node;
+		const to = e.to?.node;
+		if (from && to && isGroup(from) && isGroup(to)) edges.push({ id: e.id, fromNode: from.id, toNode: to.id });
 	}
 	return { nodes, edges };
 }
@@ -68,6 +75,27 @@ export function tidy(canvas: Canvas, pinned: string[]): boolean {
 		last = now;
 	}
 	return apply(canvas, data);
+}
+
+/** Zone maps only (zones joined by arrows): laid out again, nothing else wrapped or pushed. Returns whether anything moved. */
+export function arrangeMaps(canvas: Canvas): boolean {
+	const data = snapshot(canvas);
+	if (!data.edges.some((e) => data.nodes.find((n) => n.id === e.fromNode)?.type === "group")) return false;
+	arrangeZoneMaps(data, zoneLayout(canvas));
+	return apply(canvas, data);
+}
+
+/**
+ * Adds an empty zone to the zone map of `from`, joined to it by an arrow: its child (beside it) or
+ * its sibling (below it). The map is laid out again. Returns the new zone, or null.
+ */
+export function addZoneInMap(canvas: Canvas, from: CanvasNode, kind: "child" | "sibling", color?: string): CanvasNode | null {
+	const result = addMapZone(snapshot(canvas), from.id, kind, zoneLayout(canvas), { color });
+	if (!result) return null;
+	const edge = result.data.edges[result.data.edges.length - 1];
+	canvas.importData({ nodes: [result.zone], edges: [edge] });
+	apply(canvas, result.data);
+	return canvas.nodes.get(result.zone.id) ?? null;
 }
 
 /** Which zone each node sits in, by node id. */

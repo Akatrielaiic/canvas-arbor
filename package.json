@@ -1,6 +1,6 @@
 {
   "name": "canvas-arbor",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Build mind maps on Canvas from the keyboard: Enter and Tab add nodes, Shift+arrow moves between nodes and arrows, Shift+Enter writes on them, branches collapse and stay balanced, maps grow right, on both sides or downward, nodes fit their text.",
   "main": "main.js",
   "scripts": {

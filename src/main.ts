@@ -314,6 +314,8 @@ export default class CanvasArbor extends Plugin {
 			{ label: s.helpEdit, keys: [["Enter"]] },
 			{ label: s.helpMove, keys: arrowKeys ? [["Shift", "↑ ↓ ← →"]] : [] },
 			{ label: s.helpReorder, keys: [["Alt", "↑ ↓"]] },
+			{ label: s.helpZoneChild, keys: shiftEnterAddsChild ? shiftEnter : shiftTab },
+			{ label: s.helpZoneSibling, keys: shiftEnterAddsChild ? shiftTab : shiftEnter },
 			{ label: s.helpSearch, keys: [["Mod", "F"]] },
 			{ label: s.helpZone, keys: [...(this.settings.zoneKey ? [["Mod", "Shift", "M"]] : []), ...commandKeys(this.app, `${this.manifest.id}:move-to-zone`)] },
 		];
@@ -381,7 +383,6 @@ export default class CanvasArbor extends Plugin {
 
 	/** Tidy the zones shortly: after a layout, or after the canvas was saved (a drag, a resize). */
 	private zonesSoon(canvas: Canvas) {
-		if (!this.settings.zones) return;
 		window.clearTimeout(this.zoneTimers.get(canvas));
 		this.zoneTimers.set(
 			canvas,
@@ -393,10 +394,14 @@ export default class CanvasArbor extends Plugin {
 		);
 	}
 
-	/** Responsive zones: groups wrap their contents, overlaps are pushed apart. The selection stays put. */
+	/**
+	 * Responsive zones: groups wrap their contents, overlaps are pushed apart, zone maps take their
+	 * shape. The selection stays put. Without it, only zone maps are laid out again.
+	 */
 	private runZones(canvas: Canvas) {
-		if (!this.settings.zones || canvas.readonly || this.pensumOwns(canvas) || !this.viewOf(canvas)) return;
-		if (!zones.tidy(canvas, [...canvas.selection].map((n) => n.id))) return;
+		if (canvas.readonly || this.pensumOwns(canvas) || !this.viewOf(canvas)) return;
+		const moved = this.settings.zones ? zones.tidy(canvas, [...canvas.selection].map((n) => n.id)) : zones.arrangeMaps(canvas);
+		if (!moved) return;
 		this.afterZones(canvas);
 		canvas.requestSave();
 	}
@@ -458,6 +463,28 @@ export default class CanvasArbor extends Plugin {
 		// After the current key event, in case Canvas clears the selection on Esc.
 		window.setTimeout(() => this.select(edge), 0);
 		return true;
+	}
+
+	/** The one selected group, on a canvas that can be edited. */
+	private selectedZone(canvas: Canvas): CanvasNode | null {
+		if (canvas.readonly || canvas.selection.size !== 1) return null;
+		const [item] = canvas.selection;
+		return item && "getData" in item && !("from" in item) && isGroup(item) ? item : null;
+	}
+
+	/** A new zone in the selected zone's map, joined by an arrow, selected with its name open for typing. */
+	private addZone(from: CanvasNode, kind: Action) {
+		const canvas = from.canvas;
+		for (const n of canvas.nodes.values()) if (n.isEditing) n.blur();
+		const color = this.settings.inheritColor ? from.getData().color : undefined;
+		const zone = zones.addZoneInMap(canvas, from, kind, color);
+		if (!zone) return;
+		this.afterZones(canvas);
+		this.runZones(canvas);
+		canvas.requestSave();
+		canvas.panIntoView(zone.getBBox());
+		canvas.selectOnly(zone);
+		zone.focusLabel?.();
 	}
 
 	private singleSelected(canvas: Canvas): CanvasNode | null {
@@ -524,6 +551,21 @@ export default class CanvasArbor extends Plugin {
 			evt.preventDefault();
 			evt.stopPropagation();
 			edge.editLabel();
+			return;
+		}
+		const zone = this.selectedZone(canvas);
+		if (zone && action === "edit") {
+			evt.preventDefault();
+			evt.stopPropagation();
+			zone.focusLabel?.();
+			return;
+		}
+		if (zone && action !== "edit") {
+			// Canvas Pensum makes the zone maps of its own canvas.
+			if (this.pensumOwns(canvas)) return;
+			evt.preventDefault();
+			evt.stopPropagation();
+			this.addZone(zone, action);
 			return;
 		}
 		const node = this.singleSelected(canvas);

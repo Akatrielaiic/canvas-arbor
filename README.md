@@ -82,6 +82,14 @@ nothing new to learn, nothing locked in.
   sends the selected nodes there, with their branches, keeping the map's shape;
   type a name that doesn't exist and press Enter to create that zone on the spot.
   Tidy keeps every tree and loose node inside its zone.
+- **Zone maps.** Join zones with arrows and they become a map, laid out like a
+  mind map around the first one: children beside their parent, siblings stacked
+  below each other, evenly spaced. When a zone grows, shrinks or is moved by
+  hand, the map is laid out again (drag a zone above or below a sibling, or to
+  the other side of the root, to reorder it). With a zone selected,
+  **Shift+Tab** adds a zone beside it and **Shift+Enter** one below it, joined
+  by an arrow, with its name ready for typing; **Enter** renames the zone. Only
+  zones joined by arrows move; works with or without *Responsive zones*.
 - **Responsive zones** (setting, off by default). Every group wraps its nodes and
   the branches below them, growing and shrinking as the map changes; nodes and
   groups that would overlap are pushed apart, to the right or down, and the
@@ -105,6 +113,8 @@ nothing new to learn, nothing locked in.
 | Tab | Indent (as usual) | — | — |
 | Shift+arrow | Select text | Go to the parent, child or neighbouring node, stopping on the arrow in between | Go to the node at either end, or to the next branch's arrow |
 | Alt+Up / Alt+Down | — | Move the node before / after its sibling | — |
+| Shift+Tab / Shift+Enter, zone selected | — | New zone beside / below it, in the same zone map | — |
+| Enter, zone selected | — | Rename the zone | — |
 | Esc | Stop typing, node stays selected | — | Stop writing the label, arrow stays selected |
 | Cmd/Ctrl+F | Search the canvas | Search the canvas | Search the canvas |
 

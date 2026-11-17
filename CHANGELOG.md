@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+- **Zone maps.** Zones joined by arrows form a map, laid out like a mind map around the first zone: children beside their parent, siblings below each other, evenly spaced. When a zone grows, shrinks or is dragged, the map is laid out again; dragging a zone above or below a sibling reorders it. Zones not joined by arrows are left where they are.
+- With a zone selected, **Shift+Tab** adds a zone beside it and **Shift+Enter** one below it, joined by an arrow, with the name open for typing. **Enter** renames the selected zone.
+- Works with or without *Responsive zones*. On the Pensatorium, Canvas Pensum does the same with the Inbox at the centre.
+
 ## 0.7.0
 
 - **New keys for adding nodes.** Enter and Tab now do what they do everywhere else: a line break, a list indent. **Shift+Tab** adds a child (to the right) and **Shift+Enter** a sibling (below), both while typing and on a selected node. **Enter** on a selected node or arrow opens it for writing (it was Shift+Enter).

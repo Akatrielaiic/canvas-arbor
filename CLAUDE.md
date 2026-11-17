@@ -54,6 +54,7 @@ Some `obsidianmd` lint rules cannot be disabled with a comment (`no-default-hotk
 - **Division with Canvas Pensum.** If Pensum is enabled and the canvas is its Pensatorium (`pensumOwns`), Arbor adds no zone menu items and does not tidy zones there.
 - **Zones.** A zone is a group. For the engine, "children" are Arbor's *branches* only (`parentOf`), not links between maps. Hidden nodes of collapsed branches are left out of the snapshot and follow through `syncFolds`. *Responsive zones* is **off by default** because it reshapes the groups of every canvas the user edits.
 - **Zone tidying must be idempotent**: it runs after every layout and after every canvas save, and a tidy that keeps changing things would save forever.
+- **Zone maps** (0.8.0). Arrows between top-level groups make a tree (`zoneParents` in the engine: oldest arrow wins, loops ignored), laid out around its root by `arrange` in `zone-engine.ts`: side by current x, order by current y, so a drag reorders. `snapshot` keeps group-to-group arrows for this. `runZones` now runs on every canvas save even with *Responsive zones* off: then only `arrangeZoneMaps` runs (nothing wrapped or pushed). Shift+Tab / Shift+Enter on a selected group add a zone (`addZoneInMap`); on the Pensatorium they are left to Pensum.
 - **Tidy** (the toolbar button) only pushes trees and loose nodes that share a group, so nothing leaves its zone.
 
 ## State and ideas

@@ -39,6 +39,8 @@ export interface CanvasNode {
 	render(): void;
 	startEditing(): void;
 	blur(): void;
+	/** Groups: open the label for typing. */
+	focusLabel?(): void;
 	getBBox(): BBox;
 }
 
