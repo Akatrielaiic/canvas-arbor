@@ -84,12 +84,14 @@ nothing new to learn, nothing locked in.
   Tidy keeps every tree and loose node inside its zone.
 - **Zone maps.** Join zones with arrows and they become a map, laid out like a
   mind map around the first one: children beside their parent, siblings stacked
-  below each other, evenly spaced. When a zone grows, shrinks or is moved by
-  hand, the map is laid out again (drag a zone above or below a sibling, or to
-  the other side of the root, to reorder it). With a zone selected,
+  below each other, evenly spaced. When a zone grows or shrinks, the map is
+  laid out again; a zone dragged out of place goes back. With a zone selected,
   **Shift+Tab** adds a zone beside it and **Shift+Enter** one below it, joined
-  by an arrow, with its name ready for typing; **Enter** renames the zone. Only
-  zones joined by arrows move; works with or without *Responsive zones*.
+  by an arrow, with its name ready for typing; **Enter** renames the zone;
+  **Alt+Up / Alt+Down** move it before or after its sibling, **Alt+Left /
+  Alt+Right** to the other side of the first zone. Nodes stay in their zone
+  even if another zone is dropped over it. Only zones joined by arrows move;
+  works with or without *Responsive zones*.
 - **Responsive zones** (setting, off by default). Every group wraps its nodes and
   the branches below them, growing and shrinking as the map changes; nodes and
   groups that would overlap are pushed apart, to the right or down, and the
@@ -115,6 +117,7 @@ nothing new to learn, nothing locked in.
 | Alt+Up / Alt+Down | — | Move the node before / after its sibling | — |
 | Shift+Tab / Shift+Enter, zone selected | — | New zone beside / below it, in the same zone map | — |
 | Enter, zone selected | — | Rename the zone | — |
+| Alt+arrow, zone selected | — | Move the zone up / down in its map, or to the other side | — |
 | Esc | Stop typing, node stays selected | — | Stop writing the label, arrow stays selected |
 | Cmd/Ctrl+F | Search the canvas | Search the canvas | Search the canvas |
 

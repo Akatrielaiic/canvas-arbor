@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0
+
+- **Zone maps keep their order.** The order and side of each zone are kept in its arrow, so a zone dragged out of place goes back instead of overlapping another one. To reorder, select the zone and press **Alt+Up / Alt+Down** (before or after its sibling) or **Alt+Left / Alt+Right** (to the other side of the first zone).
+- Nodes stay in their zone while another zone is dropped over it; before, the smaller zone took them.
+- Fixed: the name of a zone added with Shift+Tab / Shift+Enter didn't open for typing.
+
 ## 0.8.0
 
 - **Zone maps.** Zones joined by arrows form a map, laid out like a mind map around the first zone: children beside their parent, siblings below each other, evenly spaced. When a zone grows, shrinks or is dragged, the map is laid out again; dragging a zone above or below a sibling reorders it. Zones not joined by arrows are left where they are.

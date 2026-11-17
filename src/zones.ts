@@ -1,7 +1,7 @@
 // Zones on a live canvas: glue between Obsidian's canvas objects and the pure zone engine.
 // A zone is a group; see zone-engine.ts for the rules.
 import { App, Modal, Setting, SuggestModal, prepareFuzzySearch } from "obsidian";
-import type { Canvas, CanvasNode } from "./canvas";
+import type { Canvas, CanvasEdge, CanvasNode } from "./canvas";
 import { t } from "./i18n";
 import { hooks, isGroup, parentOf } from "./tree";
 import {
@@ -11,6 +11,7 @@ import {
 	addMapZone,
 	addZone,
 	arrangeZoneMaps,
+	moveMapZone,
 	groupsBySize,
 	moveToZone,
 	tidyZones,
@@ -44,7 +45,9 @@ export function snapshot(canvas: Canvas): ZoneData {
 	for (const e of canvas.edges.values()) {
 		const from = e.from?.node;
 		const to = e.to?.node;
-		if (from && to && isGroup(from) && isGroup(to)) edges.push({ id: e.id, fromNode: from.id, toNode: to.id });
+		if (from && to && isGroup(from) && isGroup(to)) {
+			edges.push({ id: e.id, fromNode: from.id, toNode: to.id, fromSide: e.from.side, toSide: e.to.side });
+		}
 	}
 	return { nodes, edges };
 }
@@ -63,13 +66,16 @@ export function apply(canvas: Canvas, data: ZoneData): boolean {
 	return changed;
 }
 
+/** Which zone each node was in last time, per canvas: a zone dropped over another doesn't take its nodes. */
+const stays = new WeakMap<Canvas, Map<string, string>>();
+
 /** Wraps every zone around its contents and pushes overlaps apart. Returns whether anything moved. */
 export function tidy(canvas: Canvas, pinned: string[]): boolean {
 	const data = snapshot(canvas);
 	if (!data.nodes.some((n) => n.type === "group")) return false;
 	const layout = zoneLayout(canvas);
 	for (let pass = 0, last = ""; pass < 5; pass++) {
-		tidyZones(data, layout, pinned);
+		stays.set(canvas, tidyZones(data, layout, pinned, stays.get(canvas)));
 		const now = JSON.stringify(data.nodes);
 		if (now === last) break;
 		last = now;
@@ -81,8 +87,37 @@ export function tidy(canvas: Canvas, pinned: string[]): boolean {
 export function arrangeMaps(canvas: Canvas): boolean {
 	const data = snapshot(canvas);
 	if (!data.edges.some((e) => data.nodes.find((n) => n.id === e.fromNode)?.type === "group")) return false;
-	arrangeZoneMaps(data, zoneLayout(canvas));
+	stays.set(canvas, arrangeZoneMaps(data, zoneLayout(canvas), stays.get(canvas)));
 	return apply(canvas, data);
+}
+
+/**
+ * Makes the live arrows between zones match `data`: same order, same sides. The order of the
+ * arrows is the order of the zones in a map, so when it changes they are taken out and put back.
+ */
+function syncMapEdges(canvas: Canvas, data: ZoneData): void {
+	const groups = new Set(data.nodes.filter((n) => n.type === "group").map((n) => n.id));
+	const wanted = data.edges.filter((e) => groups.has(e.fromNode) && groups.has(e.toNode));
+	const live = [...canvas.edges.values()].filter((e) => e.from?.node && e.to?.node && isGroup(e.from.node) && isGroup(e.to.node));
+	const key = (id: string, side: unknown) => `${id}:${String(side)}`;
+	if (live.map((e) => key(e.id, e.from.side)).join() === wanted.map((e) => key(e.id, e.fromSide)).join()) return;
+	if (!canvas.removeEdge) return;
+	const byId = new Map<string, CanvasEdge>(live.map((e) => [e.id, e]));
+	const edges = wanted.map((e) => {
+		const old = byId.get(e.id)?.getData();
+		return { ...(old ?? { id: e.id, fromNode: e.fromNode, toNode: e.toNode }), fromSide: e.fromSide, toSide: e.toSide };
+	});
+	for (const e of live) canvas.removeEdge(e);
+	canvas.importData({ nodes: [], edges });
+}
+
+/** Moves a zone up / down among its siblings, or to the other side of the root. Returns whether it moved. */
+export function moveZoneInMap(canvas: Canvas, zone: CanvasNode, where: "up" | "down" | "left" | "right"): boolean {
+	const next = moveMapZone(snapshot(canvas), zone.id, where, zoneLayout(canvas));
+	if (!next) return false;
+	syncMapEdges(canvas, next);
+	apply(canvas, next);
+	return true;
 }
 
 /**
@@ -92,8 +127,8 @@ export function arrangeMaps(canvas: Canvas): boolean {
 export function addZoneInMap(canvas: Canvas, from: CanvasNode, kind: "child" | "sibling", color?: string): CanvasNode | null {
 	const result = addMapZone(snapshot(canvas), from.id, kind, zoneLayout(canvas), { color });
 	if (!result) return null;
-	const edge = result.data.edges[result.data.edges.length - 1];
-	canvas.importData({ nodes: [result.zone], edges: [edge] });
+	canvas.importData({ nodes: [result.zone], edges: [] });
+	syncMapEdges(canvas, result.data);
 	apply(canvas, result.data);
 	return canvas.nodes.get(result.zone.id) ?? null;
 }
@@ -145,6 +180,10 @@ export function sendToZone(canvas: Canvas, ids: string[], zone: { id: string } |
 		zoneId = zone.id;
 	}
 	const moved = moveToZone(data, ids, zoneId, layout);
+	// The moved nodes belong to that zone now, whatever it overlaps until it is tidied.
+	const stay = stays.get(canvas) ?? new Map<string, string>();
+	for (const id of ids) stay.set(id, zoneId);
+	stays.set(canvas, stay);
 	return moved ? apply(canvas, moved) : false;
 }
 

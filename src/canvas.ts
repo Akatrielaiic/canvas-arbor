@@ -39,8 +39,9 @@ export interface CanvasNode {
 	render(): void;
 	startEditing(): void;
 	blur(): void;
-	/** Groups: open the label for typing. */
+	/** Groups: open the label for typing (once the node is attached and rendered). */
 	focusLabel?(): void;
+	labelEl?: HTMLElement;
 	getBBox(): BBox;
 }
 
@@ -85,6 +86,7 @@ export interface Canvas {
 		save: boolean;
 	}): CanvasNode;
 	importData(data: { nodes: unknown[]; edges: unknown[] }): void;
+	removeEdge?(edge: CanvasEdge): void;
 	selectOnly(item: CanvasNode | CanvasEdge): void;
 	deselectAll?(): void;
 	requestSave(): void;

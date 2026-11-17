@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type CanvasData, type CanvasNode, type Layout, addMapZone, arrangeZoneMaps, linkZonesTo, mapGaps, tidyZones, zoneParents } from "../src/zone-engine";
+import { type CanvasData, type CanvasNode, type Layout, addMapZone, arrangeZoneMaps, linkZonesTo, mapGaps, moveMapZone, tidyZones, zoneParents } from "../src/zone-engine";
 
 const layout: Layout = { cardWidth: 400, cardHeight: 400, gap: 40, columns: 2 };
 const { across, along } = mapGaps(layout);
@@ -150,5 +150,69 @@ describe("zone maps", () => {
 		const before = JSON.stringify(data);
 		arrangeZoneMaps(data, layout);
 		expect(JSON.stringify(data)).toBe(before);
+	});
+
+	it("puts a dragged zone back in its place: order and side come from the arrows", () => {
+		const data: CanvasData = {
+			nodes: [zone("root", 0, 0), zone("a", 0, 0), zone("b", 0, 0)],
+			edges: [
+				{ ...arrow("root", "a"), fromSide: "right", toSide: "left" },
+				{ ...arrow("root", "b"), fromSide: "right", toSide: "left" },
+			],
+		};
+		tidy(data);
+		const placed = JSON.stringify(data.nodes);
+		// Drag "b" above "a" and onto the other side: it goes back.
+		at(data, "b").x = -3000;
+		at(data, "b").y = -3000;
+		tidy(data);
+		expect(JSON.stringify(data.nodes)).toBe(placed);
+	});
+
+	it("doesn't let a zone dropped over another take its cards", () => {
+		const data: CanvasData = {
+			nodes: [zone("root", 0, 0), zone("a", 0, 0), zone("b", 0, 0), card("ca", 0, 0), card("cb", 0, 0)],
+			edges: [arrow("root", "a"), arrow("root", "b")],
+		};
+		// Put one card in each zone, then lay out.
+		at(data, "a").x = 3000;
+		at(data, "b").x = 3000;
+		at(data, "b").y = 3000;
+		Object.assign(at(data, "ca"), { x: 3040, y: 40 });
+		Object.assign(at(data, "cb"), { x: 3040, y: 3040 });
+		let stay = tidyZones(data, layout);
+		for (let i = 0; i < 4; i++) stay = tidyZones(data, layout, [], stay);
+		expect(stay.get("ca")).toBe("a");
+		expect(stay.get("cb")).toBe("b");
+		// Drag "a" (with its card) exactly over "b": both cards sit in both zones.
+		const a = at(data, "a");
+		const b = at(data, "b");
+		const dx = b.x - a.x;
+		const dy = b.y - a.y;
+		for (const n of [a, at(data, "ca")]) {
+			n.x += dx;
+			n.y += dy;
+		}
+		for (let i = 0; i < 5; i++) stay = tidyZones(data, layout, [], stay);
+		expect(stay.get("ca")).toBe("a");
+		expect(stay.get("cb")).toBe("b");
+		noOverlaps(data);
+		expect(zoneParents(data).get("a")).toBe("root");
+	});
+
+	it("moves a zone up, down and to the other side with the keys", () => {
+		let data: CanvasData = {
+			nodes: [zone("root", 0, 0), zone("a", 2000, 0), zone("b", 2000, 900), zone("c", -2000, 0)],
+			edges: [arrow("root", "a"), arrow("root", "b"), arrow("root", "c")],
+		};
+		arrangeZoneMaps(data, layout);
+		expect(moveMapZone(data, "a", "up", layout)).toBeNull();
+		data = moveMapZone(data, "a", "down", layout)!;
+		expect(at(data, "a").y).toBeGreaterThan(at(data, "b").y);
+		expect(moveMapZone(data, "a", "right", layout)).toBeNull();
+		data = moveMapZone(data, "a", "left", layout)!;
+		expect(at(data, "a").x + at(data, "a").width).toBe(at(data, "root").x - across);
+		expect(at(data, "a").y).toBeGreaterThan(at(data, "c").y);
+		stable(data);
 	});
 });

@@ -316,6 +316,7 @@ export default class CanvasArbor extends Plugin {
 			{ label: s.helpReorder, keys: [["Alt", "↑ ↓"]] },
 			{ label: s.helpZoneChild, keys: shiftEnterAddsChild ? shiftEnter : shiftTab },
 			{ label: s.helpZoneSibling, keys: shiftEnterAddsChild ? shiftTab : shiftEnter },
+			{ label: s.helpZoneMove, keys: [["Alt", "↑ ↓ ← →"]] },
 			{ label: s.helpSearch, keys: [["Mod", "F"]] },
 			{ label: s.helpZone, keys: [...(this.settings.zoneKey ? [["Mod", "Shift", "M"]] : []), ...commandKeys(this.app, `${this.manifest.id}:move-to-zone`)] },
 		];
@@ -484,7 +485,21 @@ export default class CanvasArbor extends Plugin {
 		canvas.requestSave();
 		canvas.panIntoView(zone.getBBox());
 		canvas.selectOnly(zone);
-		zone.focusLabel?.();
+		// As Canvas does for a group it creates: attach and render it, then open its label.
+		const focus = (z: CanvasNode) => {
+			z.attach();
+			z.render();
+			z.focusLabel?.();
+		};
+		focus(zone);
+		window.setTimeout(() => {
+			const again = canvas.nodes.get(zone.id);
+			const label = again?.labelEl;
+			if (again && label && label.ownerDocument.activeElement !== label) {
+				canvas.selectOnly(again);
+				focus(again);
+			}
+		}, 150);
 	}
 
 	private singleSelected(canvas: Canvas): CanvasNode | null {
@@ -601,6 +616,19 @@ export default class CanvasArbor extends Plugin {
 		// Shift moves between nodes, Alt reorders; plain arrows stay with Canvas, which nudges the card.
 		if (!this.settings.arrowKeys || !ARROWS.has(evt.key) || evt.ctrlKey || evt.metaKey || evt.shiftKey === evt.altKey) return false;
 		if (evt.isComposing || !this.keyIsForCanvas(evt, canvas)) return false;
+		// Alt+arrow on a zone of a zone map: up / down among its siblings, left / right to the other
+		// side of the root. On the Pensatorium, Canvas Pensum does it.
+		const zone = this.selectedZone(canvas);
+		if (zone) {
+			if (!evt.altKey || this.pensumOwns(canvas)) return false;
+			const where = ({ ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as const)[evt.key as ArrowKey];
+			if (zones.moveZoneInMap(canvas, zone, where)) {
+				this.afterZones(canvas);
+				this.runZones(canvas);
+				canvas.requestSave();
+			}
+			return true;
+		}
 		const edge = this.selectedEdge(canvas);
 		if (edge) {
 			if (evt.altKey || !this.settings.arrowEdges) return false;

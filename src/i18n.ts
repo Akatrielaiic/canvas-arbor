@@ -85,6 +85,7 @@ const STRINGS = {
 		helpReorder: "Move the node before or after its sibling",
 		helpZoneChild: "New zone beside the selected zone, joined by an arrow",
 		helpZoneSibling: "New zone below the selected zone, in the same map",
+		helpZoneMove: "Move the selected zone up or down in its map, or to the other side of the first zone",
 		helpSearch: "Search the canvas",
 		helpZone: "Move the selected nodes to a zone",
 		secKeys: "Keys",
