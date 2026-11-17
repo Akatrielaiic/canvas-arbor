@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.1
+
+- Fixed: a node dragged into a zone left its branches outside, and the zone pushed them away. Its children and grandchildren now go with it, into the zone and out again (a branch living in another zone stays there).
+
 ## 0.12.0
 
 - **Zones no longer take nodes that aren't theirs.** A node changes zone only when you drag it in or out, or use *Move to zone…*. Tidy, a zone that grows and a new zone (Shift+Tab / Shift+Enter) leave every node where it belongs: nodes in no zone are pushed out of the way, nodes in a zone stay in it even when a layout moves them over another one, and a new node belongs to its parent's zone.

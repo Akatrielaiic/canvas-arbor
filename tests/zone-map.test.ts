@@ -374,6 +374,29 @@ describe("zone membership changes only by hand", () => {
 		expect(stay.get("ca")?.zone).toBe("b");
 	});
 
+	it("takes a dragged node's branches along, into a zone and out again", () => {
+		const data: CanvasData = {
+			nodes: [zone("a", 0, 0), zone("b", 4000, 0), card("ca", 40, 40), card("cb", 4040, 40), card("p", 40, 2000), card("k", 540, 2000), card("g", 1040, 2000), card("away", 4480, 40)],
+			edges: [arrow("p", "k"), arrow("k", "g"), arrow("p", "away")],
+		};
+		let stay = settle(data, tidyZones(data, layout));
+		expect(stay.get("away")?.zone).toBe("b");
+		// Only "p" is dragged, into "a"; its children stay where they were for now.
+		Object.assign(at(data, "p"), { x: 60, y: 60 });
+		stay = settle(data, stay, new Set(["p"]));
+		for (const id of ["p", "k", "g"]) expect(stay.get(id)?.zone, id).toBe("a");
+		expect(stay.get("away")?.zone, "a branch in another zone stays there").toBe("b");
+		for (const id of ["p", "k", "g"]) expect(overlap(at(data, "b"), at(data, id)), id).toBe(false);
+		const before = JSON.stringify(data);
+		settle(data, stay);
+		expect(JSON.stringify(data)).toBe(before);
+		// Dragged out again: the branch leaves with it.
+		Object.assign(at(data, "p"), { x: -3000, y: 3000 });
+		stay = settle(data, stay, new Set(["p"]));
+		for (const id of ["p", "k", "g"]) expect(stay.get(id)?.zone, id).toBeUndefined();
+		expect(stay.get("away")?.zone).toBe("b");
+	});
+
 	it("gives a new node its parent's zone, wherever it lands", () => {
 		const data: CanvasData = { nodes: [zone("a", 0, 0), zone("b", 2000, 0), card("p", 40, 40), card("q", 2040, 40)], edges: [] };
 		let stay = settle(data, tidyZones(data, layout));

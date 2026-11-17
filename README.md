@@ -85,7 +85,7 @@ nothing new to learn, nothing locked in.
   type a name that doesn't exist and press Enter to create that zone on the spot.
   Tidy keeps every tree and loose node inside its zone.
   A node changes zone only when you move it there: drag it in or out, or use
-  *Move to zone…*. A layout, a zone that grows, or a new zone never takes nodes
+  *Move to zone…*; its branches go with it. A layout, a zone that grows, or a new zone never takes nodes
   that aren't its own: nodes in no zone are pushed out of the way, and a new node
   belongs to its parent's zone.
 - **Zone maps.** Join zones with arrows and they become a map, laid out like a
