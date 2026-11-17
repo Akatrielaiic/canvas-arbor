@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+- **New keys for adding nodes.** Enter and Tab now do what they do everywhere else: a line break, a list indent. **Shift+Tab** adds a child (to the right) and **Shift+Enter** a sibling (below), both while typing and on a selected node. **Enter** on a selected node or arrow opens it for writing (it was Shift+Enter).
+- **After updating:** Enter no longer adds a node, and Shift+Tab no longer selects the parent: use Esc, then Shift+arrow.
+- Settings: *Enter adds a node while typing* and *Keyboard shortcuts on mobile* are gone (Shift+Enter never clashes with a line break, and works with any hardware keyboard). *Tab adds a child, Enter a sibling* is now *Shift+Enter adds a child, Shift+Tab a sibling*, off by default.
+
 ## 0.6.0
 
 - **Cmd/Ctrl+Shift+M is now a canvas key**, like Cmd/Ctrl+F and Shift+arrow, instead of a default global hotkey (which Obsidian asks plugins not to set). It works on every canvas as before and no longer exists outside one. Setting: *Cmd/Ctrl+Shift+M moves to a zone* (on by default).

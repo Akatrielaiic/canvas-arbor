@@ -1,7 +1,7 @@
 # Canvas Arbor
 
-Mind maps on Obsidian Canvas, from the keyboard: Enter and Tab add nodes,
-Shift+arrow moves between nodes and the arrows that join them, Shift+Enter
+Mind maps on Obsidian Canvas, from the keyboard: Shift+Tab and Shift+Enter add
+nodes, Shift+arrow moves between nodes and the arrows that join them, Enter
 writes on either. Branches collapse, and the map lays itself out in one of
 three structures (right, both sides, downward), balanced, compact and with room
 for the arrows' labels. Hand-drawn arrows are kept as links and routed around
@@ -13,26 +13,28 @@ by RainaJIA716.
 
 Obsidian Canvas is a great place to think, but building a mind map in it is slow:
 create a node, drag it into place, drag an edge from one node to the other, resize,
-repeat. Canvas Arbor turns that into typing. Press **Enter** and the next
-idea appears to the right, already connected and ready for text. Press **Tab** and
-it appears below, on the same level. The canvas stays a normal `.canvas` file —
+repeat. Canvas Arbor turns that into typing. Press **Shift+Tab** and the next
+idea appears to the right, already connected and ready for text. Press **Shift+Enter** and
+it appears below, on the same level. Enter and Tab keep their usual job in the text. The canvas stays a normal `.canvas` file —
 nothing new to learn, nothing locked in.
 
-<!-- GIF (uncomment when recorded): ![Typing a map: Enter and Tab add connected nodes](docs/media/type-your-map.gif) -->
+<!-- GIF (uncomment when recorded): ![Typing a map: Shift+Tab and Shift+Enter add connected nodes](docs/media/type-your-map.gif) -->
 
 ## Features
 
-- **Type your map.** While editing a node, **Enter** adds a child node and **Tab**
-  adds a sibling. **Shift+Enter** is a line break. The new node is connected,
-  placed and opened for typing.
-- **Keyboard on a selected node.** **Shift+Enter** edits it (cursor at the end), **Tab**
-  adds a child.
+- **Type your map.** While editing a node, **Shift+Tab** adds a child node (to
+  the right, as Tab indents) and **Shift+Enter** a sibling (below, as Enter starts
+  a new line). Enter and Tab work as usual: line break, list indent. The new
+  node is connected, placed and opened for typing.
+- **Keyboard on a selected node.** **Enter** edits it (cursor at the end);
+  **Shift+Tab** and **Shift+Enter** add a child or a sibling, as while typing.
+  **Esc** stops typing and leaves the node selected.
 - **Move around with Shift+arrow.** With a node selected, **Shift+arrow** goes
   to its parent, its nearest child, or the previous / next node on the same
   level. **Alt+arrow** moves the node before or after its sibling. Plain arrows
   still nudge the node, as Canvas does.
 - **Write on arrows from the keyboard.** On the way to a parent or child,
-  Shift+arrow stops on the arrow that joins the two nodes. **Shift+Enter** opens its
+  Shift+arrow stops on the arrow that joins the two nodes. **Enter** opens its
   label, **Esc** leaves it with the arrow still selected. The map makes room
   for the label: the children move away until it fits between the nodes.
 - **Collapse branches.** The chevron button on a selected node hides everything
@@ -62,7 +64,7 @@ nothing new to learn, nothing locked in.
   find bar. It searches node text, group labels, links, file names and the
   content of embedded notes. Matches are highlighted, the rest dimmed;
   **Enter / Shift+Enter** jump between them, **Esc** closes and leaves the
-  result selected so Shift+Enter edits it.
+  result selected so Enter edits it.
 - **Branch colours.** A new node takes the colour of the node it was added
   from, so a coloured branch stays coloured as it grows.
 - **Markdown lists in and out.** *Copy map as Markdown list* puts the selected
@@ -97,28 +99,27 @@ nothing new to learn, nothing locked in.
 
 | Key | While typing in a node | Node selected | Arrow selected |
 |---|---|---|---|
-| Enter | New child node | — | — |
-| Tab | New sibling node | New child node | — |
-| Shift+Tab | Select the parent node | Select the parent node | — |
-| Shift+Enter | Line break | Edit the node | Write the label |
+| Shift+Tab | New child node | New child node | — |
+| Shift+Enter | New sibling node | New sibling node | — |
+| Enter | Line break | Edit the node | Write the label |
+| Tab | Indent (as usual) | — | — |
 | Shift+arrow | Select text | Go to the parent, child or neighbouring node, stopping on the arrow in between | Go to the node at either end, or to the next branch's arrow |
 | Alt+Up / Alt+Down | — | Move the node before / after its sibling | — |
 | Esc | Stop typing, node stays selected | — | Stop writing the label, arrow stays selected |
 | Cmd/Ctrl+F | Search the canvas | Search the canvas | Search the canvas |
 
-With **Tab adds a child, Enter a sibling** turned on, Enter and Tab swap
-roles while typing (Tab: new child, Enter: new sibling), as in most mind map
-apps.
+With **Shift+Enter adds a child, Shift+Tab a sibling** turned on, the two
+new-node keys swap roles.
 
 In a downward map the reordering keys are Alt+Left / Alt+Right. Collapsing has
 no key of its own: give *Collapse or expand branch* a hotkey if you want one.
 
-Enter is never taken while an input method (Chinese, Japanese…) is still
+Shift+Enter is never taken while an input method (Chinese, Japanese…) is still
 choosing characters.
 
 ## Use cases
 
-- Brainstorm on a canvas without touching the mouse: type, Enter, type, Tab.
+- Brainstorm on a canvas without touching the mouse: type, Shift+Tab, type, Shift+Enter.
 - Turn a messy canvas into a clean tree with one click.
 - Find the node you wrote last week on a big canvas.
 - Paste screenshots into a canvas and get sensible file names.
@@ -127,8 +128,7 @@ choosing characters.
 
 - **Auto layout** — rearrange the tree after each new node (off: keep your
   manual positions and place new nodes in the nearest free spot).
-- **Enter adds a node while typing** — off keeps Enter as a line break.
-- **Tab adds a child, Enter a sibling** — swap the two keys while typing.
+- **Shift+Enter adds a child, Shift+Tab a sibling** — swap the two new-node keys.
 - **Shift+arrow moves between nodes** — off leaves Shift+arrow to Canvas.
 - **Shift+arrow stops on arrows** — off goes straight from node to node.
 - **Compact layout** — branches use each other's free space (off: each branch
@@ -142,9 +142,6 @@ choosing characters.
   joined by a link stay two maps. Off: every arrow is a branch, as before.
 - **Route links around nodes** — after layout and tidy, links are reattached to
   the sides that keep them short and off other nodes.
-- **Keyboard shortcuts on mobile** — on a phone or tablet with a hardware
-  keyboard, Enter adds nodes while typing as on desktop (off by default, so the
-  on-screen keyboard's Enter stays a line break).
 - **Horizontal / vertical gap** — spacing of the tree. Below 160 px horizontal,
   Obsidian's curved edges start to loop back.
 - **New nodes take the branch's colour**.

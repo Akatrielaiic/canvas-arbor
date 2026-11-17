@@ -6,7 +6,7 @@ each one has a commented-out line waiting for it in the main README.
 
 | File | Shows |
 |---|---|
-| `type-your-map.gif` | Type, Enter, type, Tab: three or four nodes appear connected and laid out. The hero image. |
+| `type-your-map.gif` | Type, Shift+Tab, type, Shift+Enter: three or four nodes appear connected and laid out. The hero image. |
 | `move-and-reorder.gif` | Shift+arrow between nodes, then Alt+arrow to swap two siblings. |
 | `tidy.gif` | A messy canvas, one click on the Tidy button, everything in order. |
 | `collapse.gif` | Collapsing a branch: it disappears, the count badge shows, the map closes the gap. |

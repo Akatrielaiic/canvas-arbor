@@ -9,7 +9,7 @@ Read `README.md` (what it does), `CHANGELOG.md` and `docs/NOTES.md` (why some th
 - Code, UI text, README and commits are in English. The interface is English only (the Chinese translation inherited from the fork was removed in 0.5.0; don't add translations back).
 - Releases are how changes reach the maintainer: he installs through **BRAT** and tests each release in a real vault (Obsidian 1.15 on macOS, also iOS). Nothing is tried until it is released.
 - **You cannot run Obsidian.** Anything touching the UI or canvas internals is untested until the maintainer tries it: say so plainly, and say what was verified (lint, tests, build, reading Obsidian's bundle).
-- Decision already taken, don't reopen unprompted: Enter adds a node while typing in **any** node, note cards included (Shift+Enter is the line break). An exception for note cards was offered and declined.
+- Decision already taken, don't reopen unprompted (0.7.0, reversing the earlier "Enter adds a node"): Enter and Tab keep their usual job while typing; **Shift+Tab adds a child, Shift+Enter a sibling**, while typing and on a selected node; Enter on a selected node (or arrow) edits it. Shift+Tab no longer selects the parent (Esc and Shift+arrow do that). The setting `shiftEnterAddsChild` swaps the two new-node keys.
 - One word for the things on a canvas here: **node** (Canvas Pensum says "card").
 
 ## Commands

@@ -1,4 +1,4 @@
-import { EventRef, ItemView, KeymapContext, KeymapEventHandler, Menu, Notice, Platform, Plugin, TAbstractFile, TFile, debounce, normalizePath, setIcon, setTooltip } from "obsidian";
+import { EventRef, ItemView, KeymapContext, KeymapEventHandler, Menu, Notice, Plugin, TAbstractFile, TFile, debounce, normalizePath, setIcon, setTooltip } from "obsidian";
 import { Prec } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { around } from "monkey-around";
@@ -8,7 +8,7 @@ import { HelpRow, commandKeys, watchCanvasHelp } from "./help";
 import { t } from "./i18n";
 import { NodeSize, Offset, positions, shapeOf, span } from "./layout";
 import { OutlineItem, formatOutline, parseOutline } from "./outline";
-import { CanvasSearch, isFindKey, isShiftTab, usesCmd } from "./search";
+import { CanvasSearch, isFindKey, usesCmd } from "./search";
 import { DEFAULT_SETTINGS, Fold, SettingTab, Settings } from "./settings";
 import { IMAGE_EXTENSIONS, applyReplacements, mentions, plainText, randomId, replacements } from "./text";
 import * as zones from "./zones";
@@ -305,18 +305,15 @@ export default class CanvasArbor extends Plugin {
 	/** Our keys, for the canvas help: as the settings have them, with any hotkey the user changed. */
 	private helpRows(): HelpRow[] {
 		const s = t();
-		const { enterInEdit, tabAddsChild, arrowKeys } = this.settings;
-		const enter = enterInEdit && (!Platform.isMobile || this.settings.mobileKeys) ? [["Enter"]] : [];
-		const tab = [["Tab"]];
+		const { shiftEnterAddsChild, arrowKeys } = this.settings;
+		const shiftTab = [["Shift", "Tab"]];
+		const shiftEnter = [["Shift", "Enter"]];
 		return [
-			{ label: s.helpChild, keys: tabAddsChild ? tab : enter },
-			{ label: s.helpSibling, keys: tabAddsChild ? enter : tab },
-			{ label: s.helpBreak, keys: [["Shift", "Enter"]] },
-			{ label: s.helpTabChild, keys: tab },
-			{ label: s.helpEdit, keys: [["Shift", "Enter"]] },
+			{ label: s.helpChild, keys: shiftEnterAddsChild ? shiftEnter : shiftTab },
+			{ label: s.helpSibling, keys: shiftEnterAddsChild ? shiftTab : shiftEnter },
+			{ label: s.helpEdit, keys: [["Enter"]] },
 			{ label: s.helpMove, keys: arrowKeys ? [["Shift", "↑ ↓ ← →"]] : [] },
 			{ label: s.helpReorder, keys: [["Alt", "↑ ↓"]] },
-			{ label: s.helpParent, keys: [["Shift", "Tab"]] },
 			{ label: s.helpSearch, keys: [["Mod", "F"]] },
 			{ label: s.helpZone, keys: [...(this.settings.zoneKey ? [["Mod", "Shift", "M"]] : []), ...commandKeys(this.app, `${this.manifest.id}:move-to-zone`)] },
 		];
@@ -516,12 +513,10 @@ export default class CanvasArbor extends Plugin {
 			}
 			return;
 		}
-		const back = isShiftTab(evt);
-		// Shift+Enter opens the selected node or arrow for writing (while typing it stays a line break); plain Enter does nothing here.
-		const shiftEnter = evt.key === "Enter" && evt.shiftKey;
-		if (!back && (evt.ctrlKey || evt.metaKey || evt.altKey || (evt.shiftKey && !shiftEnter))) return;
-		// Tab adds a child; Shift+Tab goes back to the parent (siblings: Enter while typing, or the + below).
-		const action: Action | "edit" | "parent" | null = back ? "parent" : evt.key === "Tab" ? "child" : shiftEnter ? "edit" : null;
+		// On a selected node: Enter opens it (or the selected arrow's label) for writing,
+		// Shift+Tab / Shift+Enter add a node, as while typing.
+		if (evt.ctrlKey || evt.metaKey || evt.altKey) return;
+		const action: Action | "edit" | null = evt.key === "Enter" && !evt.shiftKey ? "edit" : this.newNodeAction(evt);
 		if (!action || !this.keyIsForCanvas(evt, canvas)) return;
 
 		const edge = action === "edit" ? this.selectedEdge(canvas) : null;
@@ -536,7 +531,6 @@ export default class CanvasArbor extends Plugin {
 		evt.preventDefault();
 		evt.stopPropagation();
 		if (action === "edit") this.edit(node);
-		else if (action === "parent") this.selectParent(node);
 		else this.add(node, action);
 	}
 
@@ -604,6 +598,18 @@ export default class CanvasArbor extends Plugin {
 		}, 0);
 	}
 
+	/**
+	 * Shift+Tab adds a child (to the right, like Tab indents), Shift+Enter a sibling (below, like
+	 * Enter starts a new line); the setting swaps them. Null for any other key.
+	 */
+	private newNodeAction(evt: KeyboardEvent): Action | null {
+		if (!evt.shiftKey || evt.ctrlKey || evt.metaKey || evt.altKey) return null;
+		const swap = this.settings.shiftEnterAddsChild;
+		if (evt.key === "Tab") return swap ? "sibling" : "child";
+		if (evt.key === "Enter") return swap ? "child" : "sibling";
+		return null;
+	}
+
 	private onEditorKeydown(evt: KeyboardEvent, view: EditorView): boolean {
 		if (evt.isComposing || evt.key === "Process" || view.composing) return false;
 		if (isFindKey(evt)) {
@@ -615,21 +621,8 @@ export default class CanvasArbor extends Plugin {
 			this.openSearch(canvasView);
 			return true;
 		}
-		if (isShiftTab(evt)) {
-			const node = this.nodeForEditor(view);
-			if (!node || !parentOf(node)) return false;
-			if (activeDocument.querySelector(".suggestion-container") || view.dom.ownerDocument.querySelector(".suggestion-container")) return false;
-			evt.preventDefault();
-			this.selectParent(node);
-			return true;
-		}
-		if (evt.ctrlKey || evt.metaKey || evt.altKey || evt.shiftKey) return false;
-		let action: Action | null = null;
-		// While typing, by default: Enter goes one level deeper, Tab adds the next node on the same level.
-		// "Tab adds a child" swaps the two, as in most mind map apps.
-		const swap = this.settings.tabAddsChild;
-		if (evt.key === "Tab") action = swap ? "child" : "sibling";
-		else if (evt.key === "Enter" && this.settings.enterInEdit && (!Platform.isMobile || this.settings.mobileKeys)) action = swap ? "sibling" : "child";
+		// Enter and Tab keep their usual job (line break, list indent); with Shift they add a node.
+		const action = this.newNodeAction(evt);
 		if (!action) return false;
 
 		const node = this.nodeForEditor(view);
@@ -672,7 +665,7 @@ export default class CanvasArbor extends Plugin {
 		canvas.wrapperEl.focus();
 	}
 
-	/** Leave the node (stop editing if needed) and select its parent, ready for Tab / Enter. */
+	/** Leave the node (stop editing if needed) and select its parent, ready for Shift+Tab / Shift+Enter. */
 	selectParent(node: CanvasNode) {
 		const parent = parentOf(node);
 		if (!parent) return;

@@ -9,9 +9,8 @@ export interface Fold { ids: string[]; anchor: string; dx: number; dy: number }
 
 export interface Settings {
 	autoLayout: boolean;
-	enterInEdit: boolean;
-	tabAddsChild: boolean;
-	mobileKeys: boolean;
+	/** Swaps the new-node keys: Shift+Enter adds a child, Shift+Tab a sibling. */
+	shiftEnterAddsChild: boolean;
 	arrowKeys: boolean;
 	arrowEdges: boolean;
 	linkArrows: boolean;
@@ -34,9 +33,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
 	autoLayout: true,
-	enterInEdit: true,
-	tabAddsChild: false,
-	mobileKeys: false,
+	shiftEnterAddsChild: false,
 	arrowKeys: true,
 	arrowEdges: true,
 	linkArrows: true,
@@ -54,7 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
 	folds: {},
 };
 
-type ToggleKey = "autoLayout" | "enterInEdit" | "tabAddsChild" | "mobileKeys" | "arrowKeys" | "arrowEdges" | "linkArrows" | "routeLinks" | "compact" | "inheritColor" | "autoSize" | "renamePasted" | "zones" | "zoneKey";
+type ToggleKey = "autoLayout" | "shiftEnterAddsChild" | "arrowKeys" | "arrowEdges" | "linkArrows" | "routeLinks" | "compact" | "inheritColor" | "autoSize" | "renamePasted" | "zones" | "zoneKey";
 type SliderKey = "hGap" | "vGap" | "maxWidth" | "balanceFrom";
 type SettingSpec =
 	| { kind: "toggle"; key: ToggleKey; name: string; desc: string }
@@ -69,9 +66,7 @@ function settingSections(): SettingSection[] {
 		{
 			heading: s.secKeys,
 			specs: [
-				{ kind: "toggle", key: "enterInEdit", name: s.enterInEdit, desc: s.enterInEditDesc },
-				{ kind: "toggle", key: "tabAddsChild", name: s.tabAddsChild, desc: s.tabAddsChildDesc },
-				{ kind: "toggle", key: "mobileKeys", name: s.mobileKeys, desc: s.mobileKeysDesc },
+				{ kind: "toggle", key: "shiftEnterAddsChild", name: s.shiftEnterAddsChild, desc: s.shiftEnterAddsChildDesc },
 				{ kind: "toggle", key: "arrowKeys", name: s.arrowKeys, desc: s.arrowKeysDesc },
 				{ kind: "toggle", key: "arrowEdges", name: s.arrowEdges, desc: s.arrowEdgesDesc },
 			],

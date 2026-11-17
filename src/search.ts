@@ -7,10 +7,6 @@ export function usesCmd(): boolean {
 	return Platform.isMacOS || Platform.isIosApp;
 }
 
-export function isShiftTab(evt: KeyboardEvent): boolean {
-	return evt.key === "Tab" && evt.shiftKey && !evt.ctrlKey && !evt.metaKey && !evt.altKey;
-}
-
 export function isFindKey(evt: KeyboardEvent): boolean {
 	const mod = usesCmd() ? evt.metaKey && !evt.ctrlKey : evt.ctrlKey && !evt.metaKey;
 	return mod && !evt.shiftKey && !evt.altKey && evt.key.toLowerCase() === "f";
@@ -178,7 +174,7 @@ export class CanvasSearch {
 		this.canvas.wrapperEl.querySelectorAll(".arbor-search-hit, .arbor-search-current").forEach((el) => el.removeClass("arbor-search-hit", "arbor-search-current"));
 	}
 
-	/** `keepCurrent`: leave the result you were on selected, so Shift+Enter edits it straight away. */
+	/** `keepCurrent`: leave the result you were on selected, so Enter edits it straight away. */
 	close(keepCurrent: boolean) {
 		window.clearTimeout(this.timer);
 		this.pending = false;
