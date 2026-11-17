@@ -197,6 +197,15 @@ export default class CanvasArbor extends Plugin {
 			// Writing on an arrow, or leaving its label (an empty one is removed): the map makes room for it.
 			this.registerDomEvent(win, "input", (evt) => this.onLabelChanged(evt), { capture: true });
 			this.registerDomEvent(win, "focusout", (evt) => this.onLabelChanged(evt), { capture: true });
+			// Drags by hand: the only moves that take a node into or out of a zone.
+			this.registerDomEvent(win, "pointerdown", (evt) => {
+				const target = (evt.target as Node | null)?.instanceOf?.(Node) ? (evt.target as Node) : null;
+				const canvas = target && this.canvasViews().find((v) => v.canvas?.wrapperEl.contains(target))?.canvas;
+				if (canvas && !this.pensumOwns(canvas)) zones.dragStart(canvas);
+			}, { capture: true });
+			this.registerDomEvent(win, "pointerup", () => {
+				for (const { canvas } of this.canvasViews()) if (canvas) zones.dragEnd(canvas);
+			}, { capture: true });
 		};
 		listen(window);
 		this.registerEvent(this.app.workspace.on("window-open", (_w, win) => listen(win)));

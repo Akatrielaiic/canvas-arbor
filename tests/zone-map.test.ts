@@ -192,8 +192,8 @@ describe("zone maps", () => {
 		Object.assign(at(data, "cb"), { x: 3040, y: 3040 });
 		let stay = tidyZones(data, layout);
 		for (let i = 0; i < 4; i++) stay = tidyZones(data, layout, [], stay);
-		expect(stay.get("ca")).toBe("a");
-		expect(stay.get("cb")).toBe("b");
+		expect(stay.get("ca")?.zone).toBe("a");
+		expect(stay.get("cb")?.zone).toBe("b");
 		// Drag "a" (with its card) exactly over "b": both cards sit in both zones.
 		const a = at(data, "a");
 		const b = at(data, "b");
@@ -204,8 +204,8 @@ describe("zone maps", () => {
 			n.y += dy;
 		}
 		for (let i = 0; i < 5; i++) stay = tidyZones(data, layout, [], stay);
-		expect(stay.get("ca")).toBe("a");
-		expect(stay.get("cb")).toBe("b");
+		expect(stay.get("ca")?.zone).toBe("a");
+		expect(stay.get("cb")?.zone).toBe("b");
 		noOverlaps(data);
 		expect(zoneParents(data).get("a")).toBe("root");
 	});
@@ -315,5 +315,97 @@ describe("zone maps", () => {
 		expect(ends().topRight).toBe(now.topLeft);
 		expect(ends().topLeft).toBe(now.topRight);
 		stable(data);
+	});
+});
+
+describe("zone membership changes only by hand", () => {
+	const inside = (n: CanvasNode, z: CanvasNode) => {
+		const cx = n.x + n.width / 2;
+		const cy = n.y + n.height / 2;
+		return cx >= z.x && cx <= z.x + z.width && cy >= z.y && cy <= z.y + z.height;
+	};
+	const settle = (data: CanvasData, stay: ReturnType<typeof tidyZones>, moved?: Set<string>) => {
+		stay = tidyZones(data, layout, [], stay, moved ?? new Set());
+		for (let i = 0; i < 4; i++) stay = tidyZones(data, layout, [], stay, new Set());
+		return stay;
+	};
+
+	it("pushes a node in no zone out of a zone that grows over it, and keeps it out", () => {
+		const data: CanvasData = { nodes: [zone("z", 0, 0), card("in", 40, 40), card("loose", 1200, 40)], edges: [] };
+		let stay = settle(data, tidyZones(data, layout));
+		expect(stay.get("loose")?.zone).toBeUndefined();
+		// A tree layout moves "in" right, so the zone grows over "loose".
+		at(data, "in").x = 1100;
+		stay = settle(data, stay);
+		expect(stay.get("in")?.zone).toBe("z");
+		expect(stay.get("loose")?.zone).toBeUndefined();
+		expect(overlap(at(data, "z"), at(data, "loose"))).toBe(false);
+		const before = JSON.stringify(data);
+		settle(data, stay);
+		expect(JSON.stringify(data)).toBe(before);
+	});
+
+	it("keeps a node in its zone when a layout moves it over another zone", () => {
+		const data: CanvasData = { nodes: [zone("a", 0, 0), zone("b", 2000, 0), card("ca", 40, 40), card("cb", 2040, 40)], edges: [] };
+		let stay = settle(data, tidyZones(data, layout));
+		Object.assign(at(data, "ca"), { x: 2500, y: 40 }); // moved by a layout, not by hand
+		stay = settle(data, stay);
+		expect(stay.get("ca")?.zone).toBe("a");
+		expect(inside(at(data, "ca"), at(data, "a"))).toBe(true);
+		noOverlaps(data);
+	});
+
+	it("moves a node to the zone it was dragged into", () => {
+		const data: CanvasData = { nodes: [zone("a", 0, 0), zone("b", 2000, 0), card("ca", 40, 40), card("loose", 40, 1200)], edges: [] };
+		let stay = settle(data, tidyZones(data, layout));
+		Object.assign(at(data, "ca"), { x: 2500, y: 40 });
+		Object.assign(at(data, "loose"), { x: 60, y: 60 });
+		stay = settle(data, stay, new Set(["ca", "loose"]));
+		expect(stay.get("ca")?.zone).toBe("b");
+		expect(stay.get("loose")?.zone).toBe("a");
+	});
+
+	it("without a list of dragged nodes, a changed position counts as moved by hand", () => {
+		const data: CanvasData = { nodes: [zone("a", 0, 0), zone("b", 2000, 0), card("ca", 40, 40)], edges: [] };
+		let stay = tidyZones(data, layout);
+		for (let i = 0; i < 4; i++) stay = tidyZones(data, layout, [], stay);
+		Object.assign(at(data, "ca"), { x: 2500, y: 40 });
+		stay = tidyZones(data, layout, [], stay);
+		expect(stay.get("ca")?.zone).toBe("b");
+	});
+
+	it("gives a new node its parent's zone, wherever it lands", () => {
+		const data: CanvasData = { nodes: [zone("a", 0, 0), zone("b", 2000, 0), card("p", 40, 40), card("q", 2040, 40)], edges: [] };
+		let stay = settle(data, tidyZones(data, layout));
+		data.nodes.push(card("kid", 2500, 40), card("free", 2500, 600));
+		data.edges.push(arrow("p", "kid"));
+		at(data, "free").x = 1400; // loose new node with no parent: where it is
+		stay = settle(data, stay);
+		expect(stay.get("kid")?.zone).toBe("a");
+		expect(inside(at(data, "kid"), at(data, "a"))).toBe(true);
+		noOverlaps(data);
+	});
+
+	it("a new child of a node in no zone stays out of zones", () => {
+		const data: CanvasData = { nodes: [zone("a", 0, 0), card("ca", 40, 40), card("p", -1000, 40)], edges: [] };
+		let stay = settle(data, tidyZones(data, layout));
+		data.nodes.push(card("kid", 60, 60));
+		data.edges.push(arrow("p", "kid"));
+		stay = settle(data, stay);
+		expect(stay.get("kid")?.zone).toBeUndefined();
+		expect(overlap(at(data, "a"), at(data, "kid"))).toBe(false);
+	});
+
+	it("a new map zone pushes nodes in no zone out of the way, also without responsive zones", () => {
+		const data: CanvasData = { nodes: [zone("root", 0, 0), card("loose", 1100, 40)], edges: [] };
+		let stay = arrangeZoneMaps(data, layout, undefined, new Set());
+		const added = addMapZone(data, "root", "child", layout, { newId: ids })!;
+		expect(overlap(at(added.data, added.zone.id), at(added.data, "loose"))).toBe(true);
+		stay = arrangeZoneMaps(added.data, layout, stay, new Set());
+		expect(stay.get("loose")?.zone).toBeUndefined();
+		expect(overlap(at(added.data, added.zone.id), at(added.data, "loose"))).toBe(false);
+		const before = JSON.stringify(added.data);
+		arrangeZoneMaps(added.data, layout, stay, new Set());
+		expect(JSON.stringify(added.data)).toBe(before);
 	});
 });

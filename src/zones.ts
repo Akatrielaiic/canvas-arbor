@@ -7,6 +7,7 @@ import { hooks, isGroup, parentOf } from "./tree";
 import {
 	type CanvasData as ZoneData,
 	type CanvasNode as ZoneNode,
+	type Home,
 	type Layout,
 	addMapZone,
 	addZone,
@@ -15,6 +16,7 @@ import {
 	moveMapZone,
 	groupsBySize,
 	moveToZone,
+	subtrees,
 	tidyZones,
 	zoneOf,
 } from "./zone-engine";
@@ -67,16 +69,50 @@ export function apply(canvas: Canvas, data: ZoneData): boolean {
 	return changed;
 }
 
-/** Which zone each node was in last time, per canvas: a zone dropped over another doesn't take its nodes. */
-const stays = new WeakMap<Canvas, Map<string, string>>();
+/**
+ * Which zone each node belongs to, per canvas (or none): it changes only when the node is moved
+ * by hand, so a zone that grows, is created or is dropped over nodes doesn't take them.
+ */
+const stays = new WeakMap<Canvas, Map<string, Home>>();
+/** Nodes dragged by hand since the last tidy, per canvas: the only ones whose zone may change. */
+const dragged = new WeakMap<Canvas, Set<string>>();
+/** Where the nodes were when a drag began. */
+const dragFrom = new WeakMap<Canvas, Map<string, { x: number; y: number }>>();
+
+/** A pointer went down on the canvas: remember where every node is. */
+export function dragStart(canvas: Canvas): void {
+	dragFrom.set(canvas, new Map([...canvas.nodes.values()].map((n) => [n.id, { x: n.x, y: n.y }])));
+}
+
+/** The pointer went up: the nodes that moved meanwhile were moved by hand. */
+export function dragEnd(canvas: Canvas): void {
+	const from = dragFrom.get(canvas);
+	dragFrom.delete(canvas);
+	if (!from) return;
+	const set = dragged.get(canvas) ?? new Set<string>();
+	for (const n of canvas.nodes.values()) {
+		const was = from.get(n.id);
+		if (was && (Math.abs(was.x - n.x) > 1 || Math.abs(was.y - n.y) > 1)) set.add(n.id);
+	}
+	if (set.size) dragged.set(canvas, set);
+}
+
+/** The nodes dragged by hand since last time, once: the next tidy settles them. */
+function takeDragged(canvas: Canvas): Set<string> {
+	const set = dragged.get(canvas) ?? new Set<string>();
+	dragged.delete(canvas);
+	return set;
+}
 
 /** Wraps every zone around its contents and pushes overlaps apart. Returns whether anything moved. */
 export function tidy(canvas: Canvas, pinned: string[]): boolean {
 	const data = snapshot(canvas);
 	if (!data.nodes.some((n) => n.type === "group")) return false;
 	const layout = zoneLayout(canvas);
+	let moved = takeDragged(canvas);
 	for (let pass = 0, last = ""; pass < 5; pass++) {
-		stays.set(canvas, tidyZones(data, layout, pinned, stays.get(canvas)));
+		stays.set(canvas, tidyZones(data, layout, pinned, stays.get(canvas), moved));
+		moved = new Set();
 		const now = JSON.stringify(data.nodes);
 		if (now === last) break;
 		last = now;
@@ -84,11 +120,11 @@ export function tidy(canvas: Canvas, pinned: string[]): boolean {
 	return apply(canvas, data);
 }
 
-/** Zone maps only (zones joined by arrows): laid out again, nothing else wrapped or pushed. Returns whether anything moved. */
+/** Zone maps only (zones joined by arrows): laid out again, nodes in no zone kept out of them. Returns whether anything moved. */
 export function arrangeMaps(canvas: Canvas): boolean {
 	const data = snapshot(canvas);
 	if (!data.edges.some((e) => data.nodes.find((n) => n.id === e.fromNode)?.type === "group")) return false;
-	stays.set(canvas, arrangeZoneMaps(data, zoneLayout(canvas), stays.get(canvas)));
+	stays.set(canvas, arrangeZoneMaps(data, zoneLayout(canvas), stays.get(canvas), takeDragged(canvas)));
 	return apply(canvas, data);
 }
 
@@ -190,9 +226,13 @@ export function sendToZone(canvas: Canvas, ids: string[], zone: { id: string } |
 		zoneId = zone.id;
 	}
 	const moved = moveToZone(data, ids, zoneId, layout);
-	// The moved nodes belong to that zone now, whatever it overlaps until it is tidied.
-	const stay = stays.get(canvas) ?? new Map<string, string>();
-	for (const id of ids) stay.set(id, zoneId);
+	// The moved nodes, with their branches, belong to that zone now, whatever it overlaps.
+	const stay = stays.get(canvas) ?? new Map<string, Home>();
+	const subtree = subtrees(data);
+	for (const id of ids) {
+		const node = data.nodes.find((n) => n.id === id);
+		for (const n of node && node.type !== "group" ? subtree(node) : []) stay.set(n.id, { zone: zoneId });
+	}
 	stays.set(canvas, stay);
 	return moved ? apply(canvas, moved) : false;
 }

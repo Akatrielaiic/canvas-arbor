@@ -84,6 +84,10 @@ nothing new to learn, nothing locked in.
   sends the selected nodes there, with their branches, keeping the map's shape;
   type a name that doesn't exist and press Enter to create that zone on the spot.
   Tidy keeps every tree and loose node inside its zone.
+  A node changes zone only when you move it there: drag it in or out, or use
+  *Move to zone…*. A layout, a zone that grows, or a new zone never takes nodes
+  that aren't its own: nodes in no zone are pushed out of the way, and a new node
+  belongs to its parent's zone.
 - **Zone maps.** Join zones with arrows and they become a map, laid out like a
   mind map around the first one, exactly as nodes are: its children clockwise
   round it (on the right from top to bottom, on the left from bottom to top),
@@ -96,8 +100,9 @@ nothing new to learn, nothing locked in.
   by an arrow, with its name ready for typing; **Enter** renames the zone;
   **Alt+Up / Alt+Down** move it one step, and past the top or bottom of its
   column round to the other side of the first zone. Nodes stay in their zone
-  even if another zone is dropped over it. Only zones joined by arrows move;
-  works with or without *Responsive zones*.
+  even if another zone is dropped over it. Only zones joined by arrows move
+  (and the nodes in no zone they would cover); works with or without
+  *Responsive zones*.
 - **Responsive zones** (setting, off by default). Every group wraps its nodes and
   the branches below them, growing and shrinking as the map changes; nodes and
   groups that would overlap are pushed apart, to the right or down, and the

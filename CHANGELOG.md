@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0
+
+- **Zones no longer take nodes that aren't theirs.** A node changes zone only when you drag it in or out, or use *Move to zone…*. Tidy, a zone that grows and a new zone (Shift+Tab / Shift+Enter) leave every node where it belongs: nodes in no zone are pushed out of the way, nodes in a zone stay in it even when a layout moves them over another one, and a new node belongs to its parent's zone.
+- Nodes already taken by a zone before this version stay there: drag them out once.
+
 ## 0.11.0
 
 - **New zones are placed and balanced exactly as new nodes.** A new zone round the first zone goes on the side that takes less room (counting the zones below each one); Shift+Enter adds the next one clockwise. From *Balance on both sides from this many branches* on, the two sides are evened out whenever a zone is added and when you press Tidy, and Alt+Up / Alt+Down trade places with the next zone round, as with nodes.
