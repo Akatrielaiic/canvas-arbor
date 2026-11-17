@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type CanvasData, type CanvasNode, type Layout, addMapZone, arrangeZoneMaps, linkZonesTo, mapGaps, moveMapZone, tidyZones, zoneParents } from "../src/zone-engine";
+import { type CanvasData, type CanvasNode, type Layout, addMapZone, arrangeZoneMaps, balanceZoneMaps, linkZonesTo, mapGaps, moveMapZone, tidyZones, zoneParents } from "../src/zone-engine";
 
 const layout: Layout = { cardWidth: 400, cardHeight: 400, gap: 40, columns: 2 };
 const { across, along } = mapGaps(layout);
@@ -114,9 +114,10 @@ describe("zone maps", () => {
 		// A new child of the root on the left goes on top too (last clockwise).
 		data = addMapZone(data, "root", "child", layout, { newId: () => "r2" })!.data;
 		expect(at(data, "r2").x).toBe(at(data, "r1").x);
-		data = addMapZone(data, "root", "child", layout, { newId: () => "r3" })!.data;
+		const unbalanced = { balanceFrom: 0 };
+		data = addMapZone(data, "root", "child", layout, { newId: () => "r3", ...unbalanced })!.data;
 		expect(at(data, "r3").y).toBeGreaterThan(at(data, "r2").y);
-		data = addMapZone(data, "root", "child", layout, { newId: () => "l3" })!.data;
+		data = addMapZone(data, "root", "child", layout, { newId: () => "l3", ...unbalanced })!.data;
 		expect(at(data, "l3").x).toBe(at(data, added.id).x);
 		expect(at(data, "l3").y).toBeLessThan(at(data, sib.zone.id).y);
 		tidy(data);
@@ -262,6 +263,57 @@ describe("zone maps", () => {
 		data = moveMapZone(data, "l3", "up", layout)!;
 		expect(y("l3")).toBeLessThan(y("l2"));
 		expect(moveMapZone(data, "l1", "up", layout)).toBeNull();
+		stable(data);
+	});
+
+	it("balances the root's children like a mind map from five on, keeping the clockwise order", () => {
+		let data: CanvasData = { nodes: [zone("root", 0, 0)], edges: [] };
+		const made: string[] = [];
+		for (let i = 0; i < 6; i++) {
+			const r = addMapZone(data, "root", "child", layout, { newId: ids })!;
+			data = r.data;
+			made.push(r.zone.id);
+		}
+		const onLeft = (id: string) => at(data, id).x < at(data, "root").x;
+		// Six zones of the same size: three on each side.
+		expect(made.filter(onLeft).length).toBe(3);
+		// Clockwise: the first three down the right, the last three up the left (the newest top left).
+		expect(made.slice(0, 3).every((id) => !onLeft(id))).toBe(true);
+		expect(at(data, made[5]).y).toBeLessThan(at(data, made[3]).y);
+		// A zone that grows tips the balance: Tidy moves the split.
+		Object.assign(at(data, made[0]), { height: 3000 });
+		balanceZoneMaps(data, layout);
+		expect(made.filter(onLeft).length).toBe(5);
+		expect(onLeft(made[0])).toBe(false);
+		tidy(data);
+		stable(data);
+		noOverlaps(data);
+	});
+
+	it("in a balanced map, Alt+Up/Down trade places round the ring", () => {
+		let data: CanvasData = { nodes: [zone("root", 0, 0)], edges: [] };
+		const made: string[] = [];
+		for (let i = 0; i < 6; i++) {
+			const r = addMapZone(data, "root", "child", layout, { newId: ids })!;
+			data = r.data;
+			made.push(r.zone.id);
+		}
+		const onLeft = (id: string) => at(data, id).x < at(data, "root").x;
+		const ends = () => {
+			const right = made.filter((id) => !onLeft(id)).sort((a, b) => at(data, a).y - at(data, b).y);
+			const left = made.filter(onLeft).sort((a, b) => at(data, a).y - at(data, b).y);
+			return { topRight: right[0], bottomRight: right[right.length - 1], topLeft: left[0], bottomLeft: left[left.length - 1] };
+		};
+		// The bottom one on the right goes down: it trades places with the bottom one on the left.
+		const before = ends();
+		data = moveMapZone(data, before.bottomRight, "down", layout)!;
+		expect(ends().bottomLeft).toBe(before.bottomRight);
+		expect(ends().bottomRight).toBe(before.bottomLeft);
+		// The top one on the left goes up: it trades places with the top one on the right.
+		const now = ends();
+		data = moveMapZone(data, now.topLeft, "up", layout)!;
+		expect(ends().topRight).toBe(now.topLeft);
+		expect(ends().topLeft).toBe(now.topRight);
 		stable(data);
 	});
 });

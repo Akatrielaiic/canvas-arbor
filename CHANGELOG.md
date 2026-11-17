@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.0
+
+- **New zones are placed and balanced exactly as new nodes.** A new zone round the first zone goes on the side that takes less room (counting the zones below each one); Shift+Enter adds the next one clockwise. From *Balance on both sides from this many branches* on, the two sides are evened out whenever a zone is added and when you press Tidy, and Alt+Up / Alt+Down trade places with the next zone round, as with nodes.
+
 ## 0.10.0
 
 - **Zone maps are laid out exactly like mind maps**: the first zone's children go clockwise round it (on the right from top to bottom, on the left from bottom to top), deeper zones top to bottom. New zones follow it: Shift+Tab on the first zone adds a zone at the end of the lighter side; Shift+Enter adds the next one (clockwise round the first zone, so above it on the left; below it deeper down).

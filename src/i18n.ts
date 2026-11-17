@@ -25,7 +25,7 @@ const STRINGS = {
 		compact: "Compact layout",
 		compactDesc: "Branches fit into each other's free space instead of each taking a full-height band.",
 		balanceFrom: "Balance on both sides from this many branches",
-		balanceFromDesc: "From this many branches on, the central node's branches are kept even on both sides: whenever you add one, and when you tidy. Downward maps are left alone. 0 never balances.",
+		balanceFromDesc: "From this many branches on, the central node's branches are kept even on both sides: whenever you add one, and when you tidy. The same goes for the zones round the first zone of a zone map. Downward maps are left alone. 0 never balances.",
 		balance: "Balance map on both sides",
 		growRight: "Map grows to the right",
 		growDown: "Map grows downward",

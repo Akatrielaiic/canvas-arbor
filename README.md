@@ -87,7 +87,10 @@ nothing new to learn, nothing locked in.
 - **Zone maps.** Join zones with arrows and they become a map, laid out like a
   mind map around the first one, exactly as nodes are: its children clockwise
   round it (on the right from top to bottom, on the left from bottom to top),
-  deeper zones top to bottom, evenly spaced. When a zone grows or shrinks, the map is
+  deeper zones top to bottom, evenly spaced. New zones are placed and balanced
+  as new nodes are: on the side that takes less room, and from *Balance on both
+  sides from this many branches* on, the sides are evened out whenever a zone is
+  added and when you tidy. When a zone grows or shrinks, the map is
   laid out again; a zone dragged out of place goes back. With a zone selected,
   **Shift+Tab** adds a zone beside it and **Shift+Enter** one below it, joined
   by an arrow, with its name ready for typing; **Enter** renames the zone;

@@ -478,7 +478,7 @@ export default class CanvasArbor extends Plugin {
 		const canvas = from.canvas;
 		for (const n of canvas.nodes.values()) if (n.isEditing) n.blur();
 		const color = this.settings.inheritColor ? from.getData().color : undefined;
-		const zone = zones.addZoneInMap(canvas, from, kind, color);
+		const zone = zones.addZoneInMap(canvas, from, kind, this.settings.balanceFrom, color);
 		if (!zone) return;
 		this.afterZones(canvas);
 		this.runZones(canvas);
@@ -622,7 +622,7 @@ export default class CanvasArbor extends Plugin {
 		if (zone) {
 			if (!evt.altKey || this.pensumOwns(canvas)) return false;
 			if (evt.key !== "ArrowUp" && evt.key !== "ArrowDown") return true;
-			if (zones.moveZoneInMap(canvas, zone, evt.key === "ArrowUp" ? "up" : "down")) {
+			if (zones.moveZoneInMap(canvas, zone, evt.key === "ArrowUp" ? "up" : "down", this.settings.balanceFrom)) {
 				this.afterZones(canvas);
 				this.runZones(canvas);
 				canvas.requestSave();
@@ -1639,6 +1639,8 @@ export default class CanvasArbor extends Plugin {
 			n.moveAndResize({ x: Math.min(...under.map((p) => p.minX)), y: (bottoms.get(zone) ?? 0) + gap, width: n.width, height: n.height });
 			bottoms.set(zone, n.y + n.height);
 		}
+		// Zone maps are balanced like mind maps (Canvas Pensum looks after its own canvas).
+		if (!this.pensumOwns(canvas) && zones.balanceMaps(canvas, this.settings.balanceFrom)) this.afterZones(canvas);
 		this.zonesSoon(canvas);
 		canvas.requestSave();
 	}

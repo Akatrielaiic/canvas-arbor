@@ -11,6 +11,7 @@ import {
 	addMapZone,
 	addZone,
 	arrangeZoneMaps,
+	balanceZoneMaps,
 	moveMapZone,
 	groupsBySize,
 	moveToZone,
@@ -112,8 +113,8 @@ function syncMapEdges(canvas: Canvas, data: ZoneData): void {
 }
 
 /** Moves a zone up / down beside its siblings, round the root at the ends. Returns whether it moved. */
-export function moveZoneInMap(canvas: Canvas, zone: CanvasNode, where: "up" | "down"): boolean {
-	const next = moveMapZone(snapshot(canvas), zone.id, where, zoneLayout(canvas));
+export function moveZoneInMap(canvas: Canvas, zone: CanvasNode, where: "up" | "down", balanceFrom: number): boolean {
+	const next = moveMapZone(snapshot(canvas), zone.id, where, zoneLayout(canvas), { balanceFrom });
 	if (!next) return false;
 	syncMapEdges(canvas, next);
 	apply(canvas, next);
@@ -124,13 +125,22 @@ export function moveZoneInMap(canvas: Canvas, zone: CanvasNode, where: "up" | "d
  * Adds an empty zone to the zone map of `from`, joined to it by an arrow: its child (beside it) or
  * its sibling (below it). The map is laid out again. Returns the new zone, or null.
  */
-export function addZoneInMap(canvas: Canvas, from: CanvasNode, kind: "child" | "sibling", color?: string): CanvasNode | null {
-	const result = addMapZone(snapshot(canvas), from.id, kind, zoneLayout(canvas), { color });
+export function addZoneInMap(canvas: Canvas, from: CanvasNode, kind: "child" | "sibling", balanceFrom: number, color?: string): CanvasNode | null {
+	const result = addMapZone(snapshot(canvas), from.id, kind, zoneLayout(canvas), { color, balanceFrom });
 	if (!result) return null;
 	canvas.importData({ nodes: [result.zone], edges: [] });
 	syncMapEdges(canvas, result.data);
 	apply(canvas, result.data);
 	return canvas.nodes.get(result.zone.id) ?? null;
+}
+
+/** Balances every zone map whose first zone has enough children, as Tidy does for mind maps. Returns whether anything changed. */
+export function balanceMaps(canvas: Canvas, balanceFrom: number): boolean {
+	const data = snapshot(canvas);
+	if (!data.edges.some((e) => data.nodes.find((n) => n.id === e.fromNode)?.type === "group")) return false;
+	balanceZoneMaps(data, zoneLayout(canvas), { balanceFrom });
+	syncMapEdges(canvas, data);
+	return apply(canvas, data);
 }
 
 /** Which zone each node sits in, by node id. */
