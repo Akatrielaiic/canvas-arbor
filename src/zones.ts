@@ -111,8 +111,8 @@ function syncMapEdges(canvas: Canvas, data: ZoneData): void {
 	canvas.importData({ nodes: [], edges });
 }
 
-/** Moves a zone up / down among its siblings, or to the other side of the root. Returns whether it moved. */
-export function moveZoneInMap(canvas: Canvas, zone: CanvasNode, where: "up" | "down" | "left" | "right"): boolean {
+/** Moves a zone up / down beside its siblings, round the root at the ends. Returns whether it moved. */
+export function moveZoneInMap(canvas: Canvas, zone: CanvasNode, where: "up" | "down"): boolean {
 	const next = moveMapZone(snapshot(canvas), zone.id, where, zoneLayout(canvas));
 	if (!next) return false;
 	syncMapEdges(canvas, next);

@@ -99,17 +99,26 @@ describe("zone maps", () => {
 		expect(at(data, "a").x - at(data, "root").x).toBe(at(data, "root").width + across);
 	});
 
-	it("adds a child on the lighter side of the root, then siblings below it", () => {
+	it("adds a child on the lighter side of the root, then the next one clockwise", () => {
 		let data: CanvasData = { nodes: [zone("root", 0, 0), zone("r1", 2000, 0)], edges: [arrow("root", "r1")] };
 		data = addMapZone(data, "root", "child", layout, { newId: ids })!.data;
 		const added = data.nodes[0];
 		expect(added.x + added.width).toBe(at(data, "root").x - across);
+		// On the left, clockwise is upwards: the sibling goes above.
 		const sib = addMapZone(data, added.id, "sibling", layout, { newId: ids, label: "Next" })!;
 		data = sib.data;
 		expect(sib.zone.label).toBe("Next");
 		expect(at(data, sib.zone.id).x).toBe(at(data, added.id).x);
-		expect(at(data, sib.zone.id).y).toBeGreaterThan(at(data, added.id).y);
+		expect(at(data, sib.zone.id).y).toBeLessThan(at(data, added.id).y);
 		expect(zoneParents(data).get(sib.zone.id)).toBe("root");
+		// A new child of the root on the left goes on top too (last clockwise).
+		data = addMapZone(data, "root", "child", layout, { newId: () => "r2" })!.data;
+		expect(at(data, "r2").x).toBe(at(data, "r1").x);
+		data = addMapZone(data, "root", "child", layout, { newId: () => "r3" })!.data;
+		expect(at(data, "r3").y).toBeGreaterThan(at(data, "r2").y);
+		data = addMapZone(data, "root", "child", layout, { newId: () => "l3" })!.data;
+		expect(at(data, "l3").x).toBe(at(data, added.id).x);
+		expect(at(data, "l3").y).toBeLessThan(at(data, sib.zone.id).y);
 		tidy(data);
 		stable(data);
 		noOverlaps(data);
@@ -200,19 +209,59 @@ describe("zone maps", () => {
 		expect(zoneParents(data).get("a")).toBe("root");
 	});
 
-	it("moves a zone up, down and to the other side with the keys", () => {
+	it("moves a zone up and down round the root, clockwise, crossing at the ends", () => {
+		const r = { fromSide: "right", toSide: "left" };
+		const l = { fromSide: "left", toSide: "right" };
 		let data: CanvasData = {
-			nodes: [zone("root", 0, 0), zone("a", 2000, 0), zone("b", 2000, 900), zone("c", -2000, 0)],
-			edges: [arrow("root", "a"), arrow("root", "b"), arrow("root", "c")],
+			nodes: [zone("root", 0, 0), zone("a", 0, 0), zone("b", 0, 0), zone("c", 0, 0), zone("d", 0, 0)],
+			// Right: a above b. Left, clockwise from the bottom: c, then d above it.
+			edges: [
+				{ ...arrow("root", "a"), ...r },
+				{ ...arrow("root", "b"), ...r },
+				{ ...arrow("root", "c"), ...l },
+				{ ...arrow("root", "d"), ...l },
+			],
 		};
 		arrangeZoneMaps(data, layout);
-		expect(moveMapZone(data, "a", "up", layout)).toBeNull();
-		data = moveMapZone(data, "a", "down", layout)!;
-		expect(at(data, "a").y).toBeGreaterThan(at(data, "b").y);
-		expect(moveMapZone(data, "a", "right", layout)).toBeNull();
-		data = moveMapZone(data, "a", "left", layout)!;
-		expect(at(data, "a").x + at(data, "a").width).toBe(at(data, "root").x - across);
-		expect(at(data, "a").y).toBeGreaterThan(at(data, "c").y);
+		const y = (id: string) => at(data, id).y;
+		const onLeft = (id: string) => at(data, id).x < at(data, "root").x;
+		expect(y("d")).toBeLessThan(y("c"));
+		// b down: past the bottom of the right, to the bottom of the left.
+		data = moveMapZone(data, "b", "down", layout)!;
+		expect(onLeft("b")).toBe(true);
+		expect(y("b")).toBeGreaterThan(y("c"));
+		// b down again: back to the bottom of the right.
+		data = moveMapZone(data, "b", "down", layout)!;
+		expect(onLeft("b")).toBe(false);
+		expect(y("b")).toBeGreaterThan(y("a"));
+		// d up: past the top of the left, to the top of the right.
+		data = moveMapZone(data, "d", "up", layout)!;
+		expect(onLeft("d")).toBe(false);
+		expect(y("d")).toBeLessThan(y("a"));
+		// c up on the left: nothing above it now but... it is alone: over to the top of the right.
+		data = moveMapZone(data, "c", "up", layout)!;
+		expect(onLeft("c")).toBe(false);
+		expect(y("c")).toBeLessThan(y("d"));
+		// Within a column: b up swaps with a.
+		data = moveMapZone(data, "b", "up", layout)!;
+		expect(y("b")).toBeLessThan(y("a"));
+		stable(data);
+		// A deeper zone only moves among its siblings.
+		data = addMapZone(data, "a", "child", layout, { newId: () => "a1" })!.data;
+		expect(moveMapZone(data, "a1", "up", layout)).toBeNull();
+	});
+
+	it("keeps deeper zones top to bottom on the left too, as mind map nodes", () => {
+		let data: CanvasData = { nodes: [zone("root", 0, 0), zone("l", -2000, 0)], edges: [{ ...arrow("root", "l"), fromSide: "left", toSide: "right" }] };
+		data = addMapZone(data, "l", "child", layout, { newId: () => "l1" })!.data;
+		data = addMapZone(data, "l1", "sibling", layout, { newId: () => "l2" })!.data;
+		data = addMapZone(data, "l", "child", layout, { newId: () => "l3" })!.data;
+		const y = (id: string) => at(data, id).y;
+		expect(y("l1")).toBeLessThan(y("l2"));
+		expect(y("l2")).toBeLessThan(y("l3"));
+		data = moveMapZone(data, "l3", "up", layout)!;
+		expect(y("l3")).toBeLessThan(y("l2"));
+		expect(moveMapZone(data, "l1", "up", layout)).toBeNull();
 		stable(data);
 	});
 });

@@ -31,7 +31,9 @@ nothing new to learn, nothing locked in.
   **Esc** stops typing and leaves the node selected.
 - **Move around with Shift+arrow.** With a node selected, **Shift+arrow** goes
   to its parent, its nearest child, or the previous / next node on the same
-  level. **Alt+arrow** moves the node before or after its sibling. Plain arrows
+  level. **Alt+Up / Alt+Down** move the node before or after its sibling; a branch
+  of the central node goes round it clockwise, past the top or bottom of its
+  side to the same end of the other side, as zones do. Plain arrows
   still nudge the node, as Canvas does.
 - **Write on arrows from the keyboard.** On the way to a parent or child,
   Shift+arrow stops on the arrow that joins the two nodes. **Enter** opens its
@@ -83,13 +85,14 @@ nothing new to learn, nothing locked in.
   type a name that doesn't exist and press Enter to create that zone on the spot.
   Tidy keeps every tree and loose node inside its zone.
 - **Zone maps.** Join zones with arrows and they become a map, laid out like a
-  mind map around the first one: children beside their parent, siblings stacked
-  below each other, evenly spaced. When a zone grows or shrinks, the map is
+  mind map around the first one, exactly as nodes are: its children clockwise
+  round it (on the right from top to bottom, on the left from bottom to top),
+  deeper zones top to bottom, evenly spaced. When a zone grows or shrinks, the map is
   laid out again; a zone dragged out of place goes back. With a zone selected,
   **Shift+Tab** adds a zone beside it and **Shift+Enter** one below it, joined
   by an arrow, with its name ready for typing; **Enter** renames the zone;
-  **Alt+Up / Alt+Down** move it before or after its sibling, **Alt+Left /
-  Alt+Right** to the other side of the first zone. Nodes stay in their zone
+  **Alt+Up / Alt+Down** move it one step, and past the top or bottom of its
+  column round to the other side of the first zone. Nodes stay in their zone
   even if another zone is dropped over it. Only zones joined by arrows move;
   works with or without *Responsive zones*.
 - **Responsive zones** (setting, off by default). Every group wraps its nodes and
@@ -114,10 +117,10 @@ nothing new to learn, nothing locked in.
 | Enter | Line break | Edit the node | Write the label |
 | Tab | Indent (as usual) | — | — |
 | Shift+arrow | Select text | Go to the parent, child or neighbouring node, stopping on the arrow in between | Go to the node at either end, or to the next branch's arrow |
-| Alt+Up / Alt+Down | — | Move the node before / after its sibling | — |
+| Alt+Up / Alt+Down | — | Move the node before / after its sibling (round the central node at the ends) | — |
 | Shift+Tab / Shift+Enter, zone selected | — | New zone beside / below it, in the same zone map | — |
 | Enter, zone selected | — | Rename the zone | — |
-| Alt+arrow, zone selected | — | Move the zone up / down in its map, or to the other side | — |
+| Alt+Up / Alt+Down, zone selected | — | Move the zone one step, round the first zone at the ends | — |
 | Esc | Stop typing, node stays selected | — | Stop writing the label, arrow stays selected |
 | Cmd/Ctrl+F | Search the canvas | Search the canvas | Search the canvas |
 

@@ -316,7 +316,7 @@ export default class CanvasArbor extends Plugin {
 			{ label: s.helpReorder, keys: [["Alt", "↑ ↓"]] },
 			{ label: s.helpZoneChild, keys: shiftEnterAddsChild ? shiftEnter : shiftTab },
 			{ label: s.helpZoneSibling, keys: shiftEnterAddsChild ? shiftTab : shiftEnter },
-			{ label: s.helpZoneMove, keys: [["Alt", "↑ ↓ ← →"]] },
+			{ label: s.helpZoneMove, keys: [["Alt", "↑ ↓"]] },
 			{ label: s.helpSearch, keys: [["Mod", "F"]] },
 			{ label: s.helpZone, keys: [...(this.settings.zoneKey ? [["Mod", "Shift", "M"]] : []), ...commandKeys(this.app, `${this.manifest.id}:move-to-zone`)] },
 		];
@@ -616,13 +616,13 @@ export default class CanvasArbor extends Plugin {
 		// Shift moves between nodes, Alt reorders; plain arrows stay with Canvas, which nudges the card.
 		if (!this.settings.arrowKeys || !ARROWS.has(evt.key) || evt.ctrlKey || evt.metaKey || evt.shiftKey === evt.altKey) return false;
 		if (evt.isComposing || !this.keyIsForCanvas(evt, canvas)) return false;
-		// Alt+arrow on a zone of a zone map: up / down among its siblings, left / right to the other
-		// side of the root. On the Pensatorium, Canvas Pensum does it.
+		// Alt+Up / Alt+Down on a zone of a zone map: one step beside its siblings, round the root at
+		// the ends. On the Pensatorium, Canvas Pensum does it.
 		const zone = this.selectedZone(canvas);
 		if (zone) {
 			if (!evt.altKey || this.pensumOwns(canvas)) return false;
-			const where = ({ ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as const)[evt.key as ArrowKey];
-			if (zones.moveZoneInMap(canvas, zone, where)) {
+			if (evt.key !== "ArrowUp" && evt.key !== "ArrowDown") return true;
+			if (zones.moveZoneInMap(canvas, zone, evt.key === "ArrowUp" ? "up" : "down")) {
 				this.afterZones(canvas);
 				this.runZones(canvas);
 				canvas.requestSave();
@@ -774,8 +774,62 @@ export default class CanvasArbor extends Plugin {
 	}
 
 	private siblingAt(node: CanvasNode, delta: -1 | 1): CanvasNode | null {
+		const ring = this.ringOf(node);
+		if (ring) return ring.kids.find((k) => k !== node) ?? null; // round the root, there is always a way
 		const sibs = this.siblings(node);
 		return (sibs && sibs.kids[sibs.kids.indexOf(node) + delta]) ?? null;
+	}
+
+	/** A branch of the central node of a two-sided map: it moves round the root, not just up and down. */
+	private ringOf(node: CanvasNode): { root: CanvasNode; tree: Tree; kids: CanvasNode[] } | null {
+		const parent = parentOf(node);
+		if (!parent || parentOf(parent)) return null;
+		const tree = buildTree(parent);
+		if (readingOrder(parent, tree) !== "both") return null;
+		return { root: parent, tree, kids: tree.get(parent) ?? [] };
+	}
+
+	/**
+	 * One step up or down for a branch of the central node, clockwise round it like zone maps: past
+	 * the top or the bottom of its side it goes to the same end of the other side. In a balanced map
+	 * the sides are shared out again, so there it trades places with the next branch round the ring.
+	 */
+	private stepRound(node: CanvasNode, ring: { root: CanvasNode; tree: Tree; kids: CanvasNode[] }, delta: -1 | 1) {
+		const { root, tree, kids } = ring;
+		if (kids.length < 2) return;
+		const onLeft = (k: CanvasNode) => center(k) < center(root);
+		if (this.balances(root, tree)) {
+			const order = clockwise(root, kids);
+			const i = order.indexOf(node);
+			// Down the right side and up the left one is clockwise.
+			const step = onLeft(node) ? -delta : delta;
+			const j = (i + step + order.length) % order.length;
+			[order[i], order[j]] = [order[j], order[i]];
+			this.balance(root, tree, true, order);
+		} else {
+			const right = kids.filter((k) => !onLeft(k)).sort((a, b) => a.y - b.y);
+			const left = kids.filter(onLeft).sort((a, b) => a.y - b.y);
+			const column = onLeft(node) ? left : right;
+			const i = column.indexOf(node);
+			const j = i + delta;
+			if (j >= 0 && j < column.length) {
+				[column[i], column[j]] = [column[j], column[i]];
+			} else {
+				column.splice(i, 1);
+				const other = column === left ? right : left;
+				if (delta < 0) other.unshift(node);
+				else other.push(node);
+			}
+			this.layout(root, {
+				tree,
+				groups: [
+					{ dir: "right", kids: right },
+					{ dir: "left", kids: left },
+				],
+			});
+		}
+		node.canvas.requestSave();
+		node.canvas.panIntoView(node.getBBox());
 	}
 
 	/** Alt+arrow across the siblings' axis: up / down, or left / right in a downward map. */
@@ -791,6 +845,11 @@ export default class CanvasArbor extends Plugin {
 	 * sit, so the two swap positions and the map is laid out again (whatever "Auto layout" says).
 	 */
 	reorder(node: CanvasNode, delta: -1 | 1) {
+		const ring = this.ringOf(node);
+		if (ring) {
+			this.stepRound(node, ring, delta);
+			return;
+		}
 		const sibs = this.siblings(node);
 		const other = sibs?.kids[sibs.kids.indexOf(node) + delta];
 		if (!sibs || !other) return;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0
+
+- **Zone maps are laid out exactly like mind maps**: the first zone's children go clockwise round it (on the right from top to bottom, on the left from bottom to top), deeper zones top to bottom. New zones follow it: Shift+Tab on the first zone adds a zone at the end of the lighter side; Shift+Enter adds the next one (clockwise round the first zone, so above it on the left; below it deeper down).
+- **Alt+Up / Alt+Down** move a node or a zone one step. A branch of the central node, or a child of the first zone, goes round it: past the top or the bottom of its side it moves to the same end of the other side (in a balanced map it trades places with the next branch round). Alt+Left / Alt+Right no longer do anything to zones.
+- **After updating:** zones on the left read from the bottom up, so the ones already there are shown in reverse once. Put them back in order with Alt+Up / Alt+Down if needed.
+
 ## 0.9.0
 
 - **Zone maps keep their order.** The order and side of each zone are kept in its arrow, so a zone dragged out of place goes back instead of overlapping another one. To reorder, select the zone and press **Alt+Up / Alt+Down** (before or after its sibling) or **Alt+Left / Alt+Right** (to the other side of the first zone).
