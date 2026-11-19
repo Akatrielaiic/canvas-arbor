@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.2
 
 - Fixed: renaming a pasted image could also rewrite text that only looked like its name (the alt text of another image, `[1.png]` in brackets, a link's display text). Only real link targets are rewritten now.
 
