@@ -221,4 +221,6 @@ The layout (`src/layout.ts`), tree reading (`src/tree.ts`), link renaming
 
 Canvas Arbor started as a fork of
 [Canvas Quick Mindmap](https://github.com/RainaJIA716/obsidian-canvas-quick-mindmap)
-by RainaJIA716. MIT, see [LICENSE](LICENSE).
+by RainaJIA716. MIT, see [LICENSE](LICENSE). Listed in the Community Plugins
+directory with
+[the original author's written permission](https://github.com/RainaJIA716/obsidian-canvas-quick-mindmap/pull/1#issuecomment-7002764816).
