@@ -1,6 +1,7 @@
 import { App, ItemView, KeymapEventHandler, Notice, SettingDefinitionItem, Platform, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, getLanguage, normalizePath, setIcon, setTooltip } from "obsidian";
 import { Prec } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
+import { applyReplacements, mentions, replacements } from "./links";
 
 // ---------- Canvas internals (not part of the public API; shapes observed in Obsidian 1.14) ----------
 
@@ -211,52 +212,6 @@ function plainText(md: string): string | null {
 		.replace(/(\*\*|__|~~|==|`)/g, "")
 		.replace(/(^|[^*\w])\*([^*\n]+)\*/g, "$1$2")
 		.replace(/\n+$/, "");
-}
-
-// ---------- Link text helpers ----------
-
-/** Names appear raw in wikilinks and URL-encoded in Markdown links. */
-function nameForms(oldName: string, newName: string): [string, string][] {
-	const forms: [string, string][] = [[oldName, newName]];
-	if (encodeURI(oldName) !== oldName) forms.push([encodeURI(oldName), encodeURI(newName)]);
-	return forms;
-}
-
-/** Characters that can sit right before / after a file name inside a wikilink or Markdown link. */
-const LINK_BEFORE = new Set(["[", "/", "(", "<"]);
-const LINK_AFTER = new Set(["]", "|", "#", ")", ">", "^"]);
-
-/** Occurrences of `name` that are a whole link target, not part of a longer name ("1.png" inside "image-1.png"). */
-function linkOccurrences(text: string, name: string): number[] {
-	const out: number[] = [];
-	for (let i = text.indexOf(name); i >= 0; i = text.indexOf(name, i + name.length)) {
-		const before = text[i - 1];
-		const after = text[i + name.length];
-		if (LINK_BEFORE.has(before) && (after === undefined || LINK_AFTER.has(after))) out.push(i);
-	}
-	return out;
-}
-
-function mentions(text: string, name: string): boolean {
-	return nameForms(name, name).some(([from]) => linkOccurrences(text, from).length > 0);
-}
-
-function replacements(text: string, oldName: string, newName: string): { from: number; to: number; insert: string }[] {
-	const out: { from: number; to: number; insert: string }[] = [];
-	for (const [from, to] of nameForms(oldName, newName)) {
-		for (const i of linkOccurrences(text, from)) out.push({ from: i, to: i + from.length, insert: to });
-	}
-	return out.sort((a, b) => a.from - b.from);
-}
-
-function applyReplacements(text: string, changes: { from: number; to: number; insert: string }[]): string {
-	let result = "";
-	let pos = 0;
-	for (const c of changes) {
-		result += text.slice(pos, c.from) + c.insert;
-		pos = c.to;
-	}
-	return result + text.slice(pos);
 }
 
 // ---------- Geometry helpers ----------
