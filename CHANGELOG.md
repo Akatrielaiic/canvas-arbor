@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fixed: renaming a pasted image could also rewrite text that only looked like its name (the alt text of another image, `[1.png]` in brackets, a link's display text). Only real link targets are rewritten now.
+
 ## 0.12.1
 
 - Fixed: a node dragged into a zone left its branches outside, and the zone pushed them away. Its children and grandchildren now go with it, into the zone and out again (a branch living in another zone stays there).

@@ -37,17 +37,39 @@ function nameForms(oldName: string, newName: string): [string, string][] {
 	return forms;
 }
 
-/** Characters that can sit right before / after a file name inside a wikilink or Markdown link. */
-const LINK_BEFORE = new Set(["[", "/", "(", "<"]);
-const LINK_AFTER = new Set(["]", "|", "#", ")", ">", "^"]);
+/**
+ * Spans of `text` that are link targets: the path of a wikilink (`[[path#heading|alias]]`, embeds too)
+ * or the destination of a Markdown link (`[text](path#heading "title")`, `[text](<path with spaces>)`),
+ * without the heading / block part. Alias and display text are never targets.
+ */
+const LINK = /\[\[([^[\]|#^\n]*)[^\]\n]*\]\]|\[(?:[^[\]\n]|\[[^[\]\n]*\])*\]\((?:<([^<>\n]*)>|([^()\s]*))[^()\n]*\)/g;
 
-/** Occurrences of `name` that are a whole link target, not part of a longer name ("1.png" inside "image-1.png"). */
+export function linkTargets(text: string): [number, number][] {
+	const out: [number, number][] = [];
+	for (const m of text.matchAll(LINK)) {
+		const at = m.index ?? 0;
+		if (m[1] !== undefined) {
+			out.push([at + 2, at + 2 + m[1].length]);
+			continue;
+		}
+		// Neither the destination nor the title can hold "(", so the last "](" opens the destination.
+		const target = m[2] ?? m[3] ?? "";
+		const start = at + m[0].lastIndexOf("](") + 2 + (m[2] !== undefined ? 1 : 0);
+		const hash = target.indexOf("#");
+		out.push([start, start + (hash >= 0 ? hash : target.length)]);
+	}
+	return out;
+}
+
+/**
+ * Where `name` is a whole link target: the target is the name itself or a path ending in `/name`.
+ * Not part of a longer name ("1.png" in "image-1.png"), not alt or display text ("![1.png](other.png)").
+ */
 export function linkOccurrences(text: string, name: string): number[] {
 	const out: number[] = [];
-	for (let i = text.indexOf(name); i >= 0; i = text.indexOf(name, i + name.length)) {
-		const before = text[i - 1];
-		const after = text[i + name.length];
-		if (LINK_BEFORE.has(before) && (after === undefined || LINK_AFTER.has(after))) out.push(i);
+	for (const [start, end] of linkTargets(text)) {
+		const at = end - name.length;
+		if (at >= start && text.slice(at, end) === name && (at === start || text[at - 1] === "/")) out.push(at);
 	}
 	return out;
 }
