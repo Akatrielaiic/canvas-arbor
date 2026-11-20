@@ -1,4 +1,4 @@
-import { EventRef, ItemView, KeymapContext, KeymapEventHandler, Menu, Notice, Plugin, TAbstractFile, TFile, debounce, normalizePath, setIcon, setTooltip } from "obsidian";
+import { EventRef, ItemView, KeymapContext, KeymapEventHandler, Menu, Notice, Plugin, TAbstractFile, TFile, debounce, getIcon, normalizePath, setIcon, setTooltip } from "obsidian";
 import { Prec } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { around } from "monkey-around";
@@ -48,6 +48,9 @@ const ARROWS = new Set<string>(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight
 const LABEL_AIR = 56;
 
 interface ScopeKey { key: string | null; modifiers: string | null; func(evt: KeyboardEvent, ctx: KeymapContext): unknown }
+
+/** A broom sweeping, where Obsidian has it (Lucide's brush-cleaning); a tree on older versions. */
+const tidyIcon = () => (getIcon("brush-cleaning") ? "brush-cleaning" : "list-tree");
 
 export default class CanvasArbor extends Plugin {
 	settings: Settings = { ...DEFAULT_SETTINGS, folds: {} };
@@ -119,7 +122,7 @@ export default class CanvasArbor extends Plugin {
 		this.addCommand({
 			id: "tidy-layout",
 			name: s.relayout,
-			icon: "list-tree",
+			icon: tidyIcon(),
 			checkCallback: (checking) => {
 				const canvas = this.activeCanvas();
 				if (!canvas || canvas.readonly) return false;
@@ -1871,7 +1874,7 @@ export default class CanvasArbor extends Plugin {
 			setTooltip(searchItem, `${t().searchTip} (${usesCmd() ? "⌘" : "Ctrl+"}F)`, { placement: "left" });
 			searchItem.addEventListener("click", () => this.openSearch(view));
 			const item = group.createDiv({ cls: "canvas-control-item" });
-			setIcon(item, "list-tree");
+			setIcon(item, tidyIcon());
 			setTooltip(item, t().tidyTip, { placement: "left" });
 			item.addEventListener("click", () => this.tidy(view.canvas));
 			// After the zoom group, before undo / redo.

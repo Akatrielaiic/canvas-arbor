@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.1
+
+- The Tidy button (and command) has a broom for an icon.
+
 ## 0.13.0
 
 - **Tidy on one map.** With a node selected, the Tidy button (and the *Tidy mind map layout* command) lays out only that node's mind map, from its central node; nothing else on the canvas moves. With nothing selected, or only zones, it tidies the whole canvas as before.
