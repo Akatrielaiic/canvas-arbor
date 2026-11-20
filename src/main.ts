@@ -63,8 +63,10 @@ export default class CanvasArbor extends Plugin {
 		hooks.hidden = (n) => this.hiddenIds.get(n.canvas)?.has(n.id) ?? false;
 		hooks.collapsed = (n) => !!this.foldsFor(n.canvas)?.[n.id];
 		const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-		motion.motionHooks.enabled = (canvas) =>
-			this.settings.animate && !reduced?.matches && !canvas.readonly && !this.pensumOwns(canvas) && canvas.canvasEl.isShown();
+		motion.motionHooks.enabled = (glide) => {
+			const canvas = glide as unknown as Canvas;
+			return this.settings.animate && !reduced?.matches && !canvas.readonly && !this.pensumOwns(canvas) && canvas.canvasEl.isShown();
+		};
 		this.glideMoves();
 		const s = t();
 

@@ -40,12 +40,13 @@ Some `obsidianmd` lint rules cannot be disabled with a comment (`no-default-hotk
 | `src/zone-engine.ts` | Pure. Zones: place, move, keep groups wrapped around contents without overlaps. **Shared verbatim with Canvas Pensum.** |
 | `src/zones.ts` | Glue between live canvas objects and the zone engine; zone picker and prompt. |
 | `src/help.ts` | Adds rows to the canvas help modal. **Shared verbatim with Canvas Pensum.** |
+| `src/motion.ts` | Gliding moves (batches, settle). **Shared verbatim with Canvas Pensum**, which glides its own moves with it. |
 | `src/search.ts`, `src/outline.ts`, `src/text.ts` | Canvas search, Markdown lists in/out, link renaming. |
 | `src/i18n.ts` | All UI strings (English). |
 | `src/settings.ts` | Settings, declared once as sections and rendered both declaratively (1.13+) and with `display()` (older). |
 | `src/canvas.ts` | The shapes of Canvas internals relied on. |
 
-**Shared files.** `src/zone-engine.ts`, `src/help.ts`, `scripts/check-shared.mjs` exist identically in both repos. Change both copies together and run `npm run check:shared`.
+**Shared files.** `src/zone-engine.ts`, `src/help.ts`, `src/motion.ts`, `scripts/check-shared.mjs` exist identically in both repos. Change both copies together and run `npm run check:shared`.
 
 ## Things that are easy to get wrong
 
