@@ -158,6 +158,10 @@ choosing characters.
 - **Shift+arrow stops on arrows** — off goes straight from node to node.
 - **Compact layout** — branches use each other's free space (off: each branch
   takes a full-height band).
+- **Animate moves** — nodes and zones glide to their new place (about 0.2 s)
+  when the map is laid out, tidied or rearranged, instead of jumping; arrows
+  follow them. Off when your system asks for reduced motion, and on Canvas
+  Pensum's Pensatorium.
 - **Balance on both sides from this many branches** — from this count on, the
   central node's branches are kept even on both sides (0: never).
 - **Extra arrows are links** — a node with several incoming arrows keeps one

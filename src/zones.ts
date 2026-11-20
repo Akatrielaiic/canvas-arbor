@@ -3,6 +3,7 @@
 import { App, Modal, Setting, SuggestModal, prepareFuzzySearch } from "obsidian";
 import type { Canvas, CanvasEdge, CanvasNode } from "./canvas";
 import { t } from "./i18n";
+import { settle } from "./motion";
 import { hooks, isGroup, parentOf } from "./tree";
 import {
 	type CanvasData as ZoneData,
@@ -33,6 +34,7 @@ export function zoneLayout(canvas: Canvas): Layout {
  * maps don't make one map the child of another. Arrows between zones are kept: they make zone maps.
  */
 export function snapshot(canvas: Canvas): ZoneData {
+	settle(); // nodes half-way through a glide are not where they are going
 	const nodes: ZoneNode[] = [];
 	const edges: ZoneData["edges"] = [];
 	for (const n of canvas.nodes.values()) {

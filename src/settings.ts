@@ -22,6 +22,8 @@ export interface Settings {
 	inheritColor: boolean;
 	renamePasted: boolean;
 	autoSize: boolean;
+	/** Nodes glide to their new place instead of jumping. */
+	animate: boolean;
 	maxWidth: number;
 	/** Groups wrap their contents and overlaps are pushed apart. */
 	zones: boolean;
@@ -45,13 +47,14 @@ export const DEFAULT_SETTINGS: Settings = {
 	inheritColor: true,
 	renamePasted: true,
 	autoSize: true,
+	animate: true,
 	maxWidth: 320,
 	zones: false,
 	zoneKey: true,
 	folds: {},
 };
 
-type ToggleKey = "autoLayout" | "shiftEnterAddsChild" | "arrowKeys" | "arrowEdges" | "linkArrows" | "routeLinks" | "compact" | "inheritColor" | "autoSize" | "renamePasted" | "zones" | "zoneKey";
+type ToggleKey = "autoLayout" | "shiftEnterAddsChild" | "arrowKeys" | "arrowEdges" | "linkArrows" | "routeLinks" | "compact" | "inheritColor" | "autoSize" | "animate" | "renamePasted" | "zones" | "zoneKey";
 type SliderKey = "hGap" | "vGap" | "maxWidth" | "balanceFrom";
 type SettingSpec =
 	| { kind: "toggle"; key: ToggleKey; name: string; desc: string }
@@ -78,6 +81,7 @@ function settingSections(): SettingSection[] {
 				{ kind: "slider", key: "hGap", name: s.hGap, desc: s.hGapDesc, min: 80, max: 400, step: 10 },
 				{ kind: "slider", key: "vGap", name: s.vGap, desc: s.vGapDesc, min: 0, max: 200, step: 10 },
 				{ kind: "toggle", key: "compact", name: s.compact, desc: s.compactDesc },
+				{ kind: "toggle", key: "animate", name: s.animate, desc: s.animateDesc },
 				{ kind: "slider", key: "balanceFrom", name: s.balanceFrom, desc: s.balanceFromDesc, min: 0, max: 12, step: 1 },
 			],
 		},

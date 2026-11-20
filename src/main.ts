@@ -11,6 +11,7 @@ import { OutlineItem, formatOutline, parseOutline } from "./outline";
 import { CanvasSearch, isFindKey, usesCmd } from "./search";
 import { DEFAULT_SETTINGS, Fold, SettingTab, Settings } from "./settings";
 import { IMAGE_EXTENSIONS, applyReplacements, mentions, plainText, randomId, replacements } from "./text";
+import * as motion from "./motion";
 import * as zones from "./zones";
 import {
 	ArrowKey,
@@ -61,6 +62,10 @@ export default class CanvasArbor extends Plugin {
 		hooks.linkArrows = () => this.settings.linkArrows;
 		hooks.hidden = (n) => this.hiddenIds.get(n.canvas)?.has(n.id) ?? false;
 		hooks.collapsed = (n) => !!this.foldsFor(n.canvas)?.[n.id];
+		const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+		motion.motionHooks.enabled = (canvas) =>
+			this.settings.animate && !reduced?.matches && !canvas.readonly && !this.pensumOwns(canvas) && canvas.canvasEl.isShown();
+		this.glideMoves();
 		const s = t();
 
 		this.addCommand({ id: "add-child", name: s.addChild, icon: "arrow-right-from-line", checkCallback: (checking) => this.commandFor("child", checking) });
@@ -202,6 +207,7 @@ export default class CanvasArbor extends Plugin {
 			this.registerDomEvent(win, "focusout", (evt) => this.onLabelChanged(evt), { capture: true });
 			// Drags by hand: the only moves that take a node into or out of a zone.
 			this.registerDomEvent(win, "pointerdown", (evt) => {
+				motion.settle(); // a drag must start from where the nodes really are
 				const target = (evt.target as Node | null)?.instanceOf?.(Node) ? (evt.target as Node) : null;
 				const canvas = target && this.canvasViews().find((v) => v.canvas?.wrapperEl.contains(target))?.canvas;
 				if (canvas && !this.pensumOwns(canvas)) zones.dragStart(canvas);
@@ -297,6 +303,23 @@ export default class CanvasArbor extends Plugin {
 
 	// ---------- Entry points ----------
 
+	/**
+	 * Every operation that moves nodes runs as one motion batch: computed instantly, then the moved
+	 * nodes glide to their new place (motion.ts). Nested calls join the outer batch.
+	 */
+	private glideMoves() {
+		const names = [
+			"layout", "tidy", "tidyMaps", "balance", "restructure", "add", "addBranch", "placeFreely", "reorder", "stepRound",
+			"collapse", "expand", "expandAll", "runZones", "addZone", "refit", "selectParent", "onArrow",
+		];
+		const self = this as unknown as Record<string, (...args: unknown[]) => unknown>;
+		for (const name of names) {
+			const own = self[name];
+			if (typeof own !== "function") throw new Error(`Canvas Arbor: no method ${name} to animate`);
+			self[name] = (...args: unknown[]) => motion.batch(canvasIn(args), () => own.apply(this, args));
+		}
+	}
+
 	private canvasViews(): CanvasView[] {
 		return this.app.workspace.getLeavesOfType("canvas").map((l) => l.view as CanvasView);
 	}
@@ -375,16 +398,18 @@ export default class CanvasArbor extends Plugin {
 
 	private async newZone(canvas: Canvas) {
 		const zone = await zones.promptZone(this.app);
-		if (zone) zones.createZone(canvas, zone);
+		if (zone) motion.batch(canvas, () => zones.createZone(canvas, zone));
 	}
 
 	private moveToZone(canvas: Canvas, ids: string[]) {
-		new zones.ZonePicker(this.app, zones.namedZones(canvas), (zone) => {
-			zones.sendToZone(canvas, ids, zone);
-			this.afterZones(canvas);
-			this.runZones(canvas);
-			canvas.requestSave();
-		}).open();
+		new zones.ZonePicker(this.app, zones.namedZones(canvas), (zone) =>
+			motion.batch(canvas, () => {
+				zones.sendToZone(canvas, ids, zone);
+				this.afterZones(canvas);
+				this.runZones(canvas);
+				canvas.requestSave();
+			}),
+		).open();
 	}
 
 	/** Nodes moved by the zone code: hidden branches follow, links are routed again. */
@@ -542,6 +567,7 @@ export default class CanvasArbor extends Plugin {
 
 	private onWindowKeydown(evt: KeyboardEvent) {
 		if (evt.isComposing || evt.key === "Process") return;
+		if (motion.gliding()) motion.settle(); // keys read positions (and Canvas nudges nodes)
 		if (evt.key === "Escape" && !evt.ctrlKey && !evt.metaKey && !evt.altKey && !evt.shiftKey) {
 			const canvas = this.activeCanvas();
 			if (canvas && this.settings.arrowEdges && this.leaveLabel(evt, canvas)) {
@@ -1116,20 +1142,26 @@ export default class CanvasArbor extends Plugin {
 		);
 	}
 
-	/** Room left after the text while typing, so the next letters fit without a resize. */
+	/** Room left after the text when a node grows while typing, so the next letters fit without a resize. */
 	private static readonly typingRoom = 48;
+	/** A node grows this close to its edge, before the text reaches it: its glide ends before the letters arrive. */
+	private static readonly typingReserve = 24;
 
 	/** Grow a node for text being typed: never narrower or shorter than it is. True if it grew. */
 	private grow(node: CanvasNode, text: string): boolean {
 		if (node.getData().type !== "text") return false;
 		const size = this.measure(node.canvas, text);
 		if (!size) return false;
-		let width = node.width;
-		if (size.width > width + 0.5) width = Math.max(size.width, Math.min(size.width + CanvasArbor.typingRoom, this.settings.maxWidth));
-		const height = Math.max(node.height, size.height);
-		if (width - node.width < 1 && height - node.height < 1) return false;
-		const y = node.y + (node.height - height) / 2;
-		node.moveAndResize({ x: node.x, y, width, height });
+		// Already growing: measure against where it is going, not where the glide has got to.
+		const now = motion.target(node) ?? { x: node.x, y: node.y, width: node.width, height: node.height };
+		let width = now.width;
+		if (size.width + CanvasArbor.typingReserve > width + 0.5)
+			width = Math.max(width, size.width, Math.min(size.width + CanvasArbor.typingReserve + CanvasArbor.typingRoom, this.settings.maxWidth));
+		const height = Math.max(now.height, size.height);
+		if (width - now.width < 1 && height - now.height < 1) return false;
+		const y = now.y + (now.height - height) / 2;
+		// The width glides; the height changes at once, or a new line would scroll the node for a moment.
+		motion.glide(node, { x: node.x, y: node.y, width: node.width, height: node.height }, { x: now.x, y, width, height }, true);
 		return true;
 	}
 
@@ -2159,4 +2191,15 @@ export default class CanvasArbor extends Plugin {
 			make("arbor-copy", "copy", s.copyTip, "top", () => void this.copyImage(file));
 		}
 	}
+}
+
+/** The canvas an operation works on, from its arguments: a canvas, or a node of it. */
+function canvasIn(args: unknown[]): Canvas | null {
+	for (const a of args) {
+		if (!a || typeof a !== "object") continue;
+		if ((a as Canvas).nodes instanceof Map) return a as Canvas;
+		const canvas = (a as Partial<CanvasNode>).canvas;
+		if (canvas?.nodes instanceof Map) return canvas;
+	}
+	return null;
 }

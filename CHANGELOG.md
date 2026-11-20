@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.0
+
+- **Moves glide.** When a map is laid out, tidied, balanced, folded or rearranged, and when zones make room, nodes and zones glide to their new place in about 0.2 s instead of jumping, with their arrows attached. Dragging is never animated. A new setting, *Animate moves* (on), turns it off; it is also off when your system asks for reduced motion, and on Canvas Pensum's Pensatorium.
+- **Typing grows the node smoothly.** The node you type in now widens a little before the text reaches its edge, gliding, so the last word never jumps to the next line. Its height still changes at once.
+
 ## 0.13.3
 
 - Fix for 0.13.2: a node you typed in could stay at its starting size, both while typing and after leaving it. It now grows while you type and fits its text exactly once you leave it, however you leave it (Esc, a click elsewhere, a new node).

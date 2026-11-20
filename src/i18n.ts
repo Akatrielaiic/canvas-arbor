@@ -37,6 +37,8 @@ const STRINGS = {
 		renamePastedDesc: "Images and other files pasted or dropped into a canvas are renamed after the canvas (\"My map.png\", \"My map-1.png\"…), like Paste Image Rename does in notes. Only files the canvas actually uses are touched.",
 		renamed: "Renamed to",
 		renameFailed: "Could not rename",
+		animate: "Animate moves",
+		animateDesc: "Nodes and zones glide to their new place when the map is laid out, tidied or rearranged, instead of jumping there. Off when your system asks for reduced motion.",
 		autoSize: "Fit nodes to their text",
 		autoSizeDesc: "Mind map nodes (text nodes with an edge) grow and shrink with their text while you type, and when you add nodes or tidy. Nodes with images, code blocks, tables or headings keep their size.",
 		maxWidth: "Maximum node width",
