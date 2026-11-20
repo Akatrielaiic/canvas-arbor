@@ -190,6 +190,7 @@ export default class CanvasArbor extends Plugin {
 			Prec.highest(EditorView.domEventHandlers({ keydown: (evt, view) => this.onEditorKeydown(evt, view) })),
 			EditorView.updateListener.of((update) => {
 				if (update.docChanged) this.onEditorChanged(update.view);
+				else if (update.focusChanged && !update.view.hasFocus) this.onEditorLeft(update.view);
 			}),
 		]);
 
@@ -274,6 +275,8 @@ export default class CanvasArbor extends Plugin {
 		for (const search of this.searches.values()) search.close(false);
 		for (const timer of this.fitTimers.values()) window.clearTimeout(timer);
 		this.fitTimers.clear();
+		for (const frame of this.growFrames.values()) window.cancelAnimationFrame(frame);
+		this.growFrames.clear();
 		hooks.linkArrows = () => true;
 		hooks.hidden = () => false;
 		hooks.collapsed = () => false;
@@ -1059,8 +1062,40 @@ export default class CanvasArbor extends Plugin {
 
 	private fitTimers = new Map<CanvasNode, number>();
 
-	/** Typing in a mind map node: resize it (debounced) and, with auto layout, re-flow its tree. */
+	private growFrames = new Map<CanvasNode, number>();
+
+	/**
+	 * Typing in a mind map node. The node only grows while you type, in the same frame as the key and
+	 * with a word of room to spare, so the last word never jumps between lines and the node never
+	 * shrinks back and forth. The map is laid out again once typing pauses; the exact fit comes when
+	 * the editor is left (onEditorLeft, fitLater).
+	 */
 	private onEditorChanged(view: EditorView) {
+		if (!this.settings.autoSize) return;
+		const node = this.nodeForEditor(view);
+		if (!node || node.canvas.readonly || !node.canvas.getEdgesForNode(node).length) return;
+		if (this.growFrames.has(node)) return; // one measure per frame, however many keys
+		this.growFrames.set(
+			node,
+			window.requestAnimationFrame(() => {
+				this.growFrames.delete(node);
+				if (node.child?.editor?.cm !== view || !this.grow(node, view.state.doc.toString())) return;
+				window.clearTimeout(this.fitTimers.get(node));
+				this.fitTimers.set(
+					node,
+					window.setTimeout(() => {
+						this.fitTimers.delete(node);
+						if (!node.canvas.nodes.has(node.id)) return;
+						if (this.settings.autoLayout && (parentOf(node) || outgoing(node).length)) this.layout(rootOf(node));
+						node.canvas.requestSave();
+					}, 300),
+				);
+			}),
+		);
+	}
+
+	/** The editor of a node lost focus: fit the node exactly to what was typed. */
+	private onEditorLeft(view: EditorView) {
 		if (!this.settings.autoSize) return;
 		const node = this.nodeForEditor(view);
 		if (!node || node.canvas.readonly || !node.canvas.getEdgesForNode(node).length) return;
@@ -1069,11 +1104,26 @@ export default class CanvasArbor extends Plugin {
 			node,
 			window.setTimeout(() => {
 				this.fitTimers.delete(node);
-				// An editor that has been closed since no longer says what the node shows.
-				const text = node.child?.editor?.cm === view ? view.state.doc.toString() : node.text;
-				this.refit(node, text);
-			}, 120),
+				this.refit(node, this.typedText(node));
+			}, 250),
 		);
+	}
+
+	/** Room left after the text while typing, so the next letters fit without a resize. */
+	private static readonly typingRoom = 48;
+
+	/** Grow a node for text being typed: never narrower or shorter than it is. True if it grew. */
+	private grow(node: CanvasNode, text: string): boolean {
+		if (node.getData().type !== "text") return false;
+		const size = this.measure(node.canvas, text);
+		if (!size) return false;
+		let width = node.width;
+		if (size.width > width + 0.5) width = Math.max(size.width, Math.min(size.width + CanvasArbor.typingRoom, this.settings.maxWidth));
+		const height = Math.max(node.height, size.height);
+		if (width - node.width < 1 && height - node.height < 1) return false;
+		const y = node.y + (node.height - height) / 2;
+		node.moveAndResize({ x: node.x, y, width, height });
+		return true;
 	}
 
 	/** Fit a node and, when its size changed, lay its map out again. */

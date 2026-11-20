@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.2
+
+- **Smoother typing.** While you type, a node only grows, right away and with a little room to spare, so the last word no longer jumps between the first and second line and the node no longer flickers. When you leave the node it fits its text exactly again; the map around it is laid out once typing pauses.
+
 ## 0.13.1
 
 - The Tidy button (and command) has a broom for an icon.
