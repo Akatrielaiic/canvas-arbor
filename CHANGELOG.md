@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.0
+
+- **Tidy on one map.** With a node selected, the Tidy button (and the *Tidy mind map layout* command) lays out only that node's mind map, from its central node; nothing else on the canvas moves. With nothing selected, or only zones, it tidies the whole canvas as before.
+
 ## 0.12.2
 
 - Fixed: renaming a pasted image could also rewrite text that only looked like its name (the alt text of another image, `[1.png]` in brackets, a link's display text). Only real link targets are rewritten now.

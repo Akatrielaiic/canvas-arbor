@@ -58,7 +58,8 @@ nothing new to learn, nothing locked in.
   downward* (selected map, or every map when nothing is selected).
 - **Tidy button.** One click in the canvas toolbar re-lays out every tree on the
   canvas, points branch arrows the way their branch grows, pulls overlapping
-  trees apart and moves loose nodes out of the way. One undo restores everything.
+  trees apart and moves loose nodes out of the way. With a node selected, only
+  its mind map is laid out again and nothing else moves. One undo restores everything.
 - **Nodes fit their text.** Mind map nodes grow and shrink as you type; long text
   wraps at a maximum width instead of making a huge node. Notes, images, code
   blocks, tables and headings keep their size.

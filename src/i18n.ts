@@ -4,7 +4,7 @@ const STRINGS = {
 		addSibling: "Add sibling node",
 		selectParent: "Select parent node",
 		relayout: "Tidy mind map layout",
-		tidyTip: "Tidy mind map",
+		tidyTip: "Tidy: the selected mind map, or the whole canvas",
 		search: "Search canvas",
 		searchTip: "Search canvas",
 		searchPlaceholder: "Search this canvas…",

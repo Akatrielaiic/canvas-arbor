@@ -1599,6 +1599,14 @@ export default class CanvasArbor extends Plugin {
 	 */
 	tidy(canvas: Canvas) {
 		if (canvas.readonly) return;
+		// With nodes selected, only their mind maps; with nothing (or only zones), the whole canvas.
+		const picked = new Set<CanvasNode>();
+		for (const id of this.selectedIds(canvas)) {
+			const node = canvas.nodes.get(id);
+			const root = node && rootOf(node);
+			if (root && (outgoing(root).length || hooks.collapsed(root))) picked.add(root);
+		}
+		if (picked.size) return this.tidyMaps(canvas, [...picked]);
 		const { vGap } = this.settings;
 		const gap = vGap * 3;
 
@@ -1650,6 +1658,20 @@ export default class CanvasArbor extends Plugin {
 		}
 		// Zone maps are balanced like mind maps (Canvas Pensum looks after its own canvas).
 		if (!this.pensumOwns(canvas) && zones.balanceMaps(canvas, this.settings.balanceFrom)) this.afterZones(canvas);
+		this.zonesSoon(canvas);
+		canvas.requestSave();
+	}
+
+	/** Tidy for the selected maps only: each is laid out again (balanced if it should be); nothing else moves. */
+	private tidyMaps(canvas: Canvas, roots: CanvasNode[]) {
+		for (const root of roots) {
+			const tree = buildTree(root);
+			if (this.settings.autoSize) for (const n of tree.keys()) this.fit(n);
+			if (this.balances(root, tree)) this.balance(root, tree, false);
+			else this.layout(root, { route: false });
+		}
+		this.syncFolds(canvas);
+		if (this.settings.linkArrows && this.settings.routeLinks) this.routeLinks(canvas);
 		this.zonesSoon(canvas);
 		canvas.requestSave();
 	}
