@@ -190,7 +190,6 @@ export default class CanvasArbor extends Plugin {
 			Prec.highest(EditorView.domEventHandlers({ keydown: (evt, view) => this.onEditorKeydown(evt, view) })),
 			EditorView.updateListener.of((update) => {
 				if (update.docChanged) this.onEditorChanged(update.view);
-				else if (update.focusChanged && !update.view.hasFocus) this.onEditorLeft(update.view);
 			}),
 		]);
 
@@ -275,8 +274,8 @@ export default class CanvasArbor extends Plugin {
 		for (const search of this.searches.values()) search.close(false);
 		for (const timer of this.fitTimers.values()) window.clearTimeout(timer);
 		this.fitTimers.clear();
-		for (const frame of this.growFrames.values()) window.cancelAnimationFrame(frame);
-		this.growFrames.clear();
+		this.growFrames.clear(); // a frame still pending finds no editing node and does nothing
+		this.grown.clear();
 		hooks.linkArrows = () => true;
 		hooks.hidden = () => false;
 		hooks.collapsed = () => false;
@@ -1063,49 +1062,57 @@ export default class CanvasArbor extends Plugin {
 	private fitTimers = new Map<CanvasNode, number>();
 
 	private growFrames = new Map<CanvasNode, number>();
+	/** Nodes grown while typing whose map has not been laid out since. */
+	private grown = new Set<CanvasNode>();
 
 	/**
-	 * Typing in a mind map node. The node only grows while you type, in the same frame as the key and
-	 * with a word of room to spare, so the last word never jumps between lines and the node never
-	 * shrinks back and forth. The map is laid out again once typing pauses; the exact fit comes when
-	 * the editor is left (onEditorLeft, fitLater).
+	 * Typing in a mind map node. The node only grows while you type, before the next frame is painted
+	 * and with a word of room to spare, so the last word never jumps between lines and the node never
+	 * shrinks back and forth. A watch (watchTyping) lays the map out once typing pauses and fits the
+	 * node exactly once its editor has closed.
 	 */
 	private onEditorChanged(view: EditorView) {
 		if (!this.settings.autoSize) return;
 		const node = this.nodeForEditor(view);
 		if (!node || node.canvas.readonly || !node.canvas.getEdgesForNode(node).length) return;
+		this.watchTyping(node, 300);
 		if (this.growFrames.has(node)) return; // one measure per frame, however many keys
+		const win = view.dom.ownerDocument.defaultView ?? window;
 		this.growFrames.set(
 			node,
-			window.requestAnimationFrame(() => {
+			win.requestAnimationFrame(() => {
 				this.growFrames.delete(node);
-				if (node.child?.editor?.cm !== view || !this.grow(node, view.state.doc.toString())) return;
-				window.clearTimeout(this.fitTimers.get(node));
-				this.fitTimers.set(
-					node,
-					window.setTimeout(() => {
-						this.fitTimers.delete(node);
-						if (!node.canvas.nodes.has(node.id)) return;
-						if (this.settings.autoLayout && (parentOf(node) || outgoing(node).length)) this.layout(rootOf(node));
-						node.canvas.requestSave();
-					}, 300),
-				);
+				if (node.isEditing && this.grow(node, view.state.doc.toString())) this.grown.add(node);
 			}),
 		);
 	}
 
-	/** The editor of a node lost focus: fit the node exactly to what was typed. */
-	private onEditorLeft(view: EditorView) {
-		if (!this.settings.autoSize) return;
-		const node = this.nodeForEditor(view);
-		if (!node || node.canvas.readonly || !node.canvas.getEdgesForNode(node).length) return;
+	/**
+	 * While a node is being edited: after a pause, grow it if a frame was missed and lay its map out if
+	 * it grew. Once the editor has closed: fit the node exactly to its text. Only a timer per edited node.
+	 */
+	private watchTyping(node: CanvasNode, delay: number) {
 		window.clearTimeout(this.fitTimers.get(node));
 		this.fitTimers.set(
 			node,
 			window.setTimeout(() => {
 				this.fitTimers.delete(node);
-				this.refit(node, this.typedText(node));
-			}, 250),
+				if (!node.canvas.nodes.has(node.id)) return void this.grown.delete(node);
+				if (!node.isEditing) {
+					const grew = this.grown.delete(node);
+					if (!this.fit(node) && !grew) return;
+					if (this.settings.autoLayout && (parentOf(node) || outgoing(node).length)) this.layout(rootOf(node));
+					node.canvas.requestSave();
+					return;
+				}
+				const typed = this.typedText(node);
+				if (typed !== undefined && this.grow(node, typed)) this.grown.add(node);
+				if (this.grown.delete(node)) {
+					if (this.settings.autoLayout && (parentOf(node) || outgoing(node).length)) this.layout(rootOf(node));
+					node.canvas.requestSave();
+				}
+				this.watchTyping(node, 500);
+			}, delay),
 		);
 	}
 
